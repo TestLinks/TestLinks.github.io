@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Workink Bypass
 // @namespace    http://tampermonkey.net/
-// @version      2.0.0
+// @version      2.0.1
 // @description  Hazle bypass a los links de Workink usando métodos y APIs de herramientas populares como Bypass.Tools, Skipped, TRW & otros. Si eres dueño de una de estas herramientas, puedes hacerle skid a mi userscript, los únicos créditos que son míos son haber escrito este Userscript. Y si no eres dueño de ninguna de estas herramientas, puedes hacerle skid a mi userscript, me da igual. Si necesitas mi ayuda para programar algo, puedes contactarme - TheRealBanHammer
 // @author       TheRealBanHammer & otros
 // @license      FREE-TO-SKID
@@ -25,7 +25,7 @@
     "use strict";
 
     const DEBUG = true;
-    const BUILD = "2026-08-09-01";
+    const BUILD = "2026-08-09-02";
     const RELAY_PROVIDERS = Object.freeze([
         { id: "bypass-tools", base: "https://evade.bypass.tools" },
         { id: "skipped", base: "https://skipped.lol" }
@@ -103,8 +103,17 @@
     let directFallbackPromise = null;
     let directQueue = Promise.resolve();
     let directDestinationResolve = null;
+    let pageSessionToken = "";
+    let pageSessionTokenResolve = null;
+    let sessionTokenCandidates = [];
+    let sessionTokenIndex = -1;
+    let sessionRetryInProgress = false;
+    let connectionParameters = null;
     let turnstileSolveSequence = 0;
     let hcaptchaSolveSequence = 0;
+    const pageSessionTokenPromise = new Promise((resolve) => {
+        pageSessionTokenResolve = resolve;
+    });
     const serverPacketHistory = [];
     const serverPacketWaiters = new Set();
     const debugState = {
@@ -1387,6 +1396,7 @@
         const info = {
             present: Boolean(token),
             length: typeof token === "string" ? token.length : 0,
+            valid: false,
             issuedAt: null,
             expiresAt: null,
             expired: false
@@ -1399,6 +1409,7 @@
             const normalized = encoded.replace(/-/g, "+").replace(/_/g, "/")
                 .padEnd(Math.ceil(encoded.length / 4) * 4, "=");
             const payload = JSON.parse(unsafeWindow.atob(normalized));
+            info.valid = token.split(".").length === 3 && Boolean(payload && typeof payload === "object");
             info.issuedAt = Number.isFinite(Number(payload.iat)) ? Number(payload.iat) : null;
             info.expiresAt = Number.isFinite(Number(payload.exp)) ? Number(payload.exp) : null;
             info.expired = info.expiresAt !== null && info.expiresAt * 1000 <= Date.now() + 30000;
@@ -1407,34 +1418,89 @@
         return info;
     }
 
-    function getStoredCustomerToken() {
+    function getStoredCustomerTokens() {
+        const tokens = [];
+        const addToken = (token, source) => {
+            const info = inspectCustomerToken(token);
+            if (!info.valid || info.expired || tokens.some((item) => item.token === token)) return;
+            tokens.push({ token, source, info });
+        };
+
+        try { addToken(unsafeWindow.customerToken || "", "window.customerToken"); } catch {}
+        try { addToken(unsafeWindow.customerSessionToken || "", "window.customerSessionToken"); } catch {}
+
         for (const storageName of ["localStorage", "sessionStorage"]) {
             for (const key of ["customerToken", "customerSessionToken"]) {
                 try {
-                    const token = unsafeWindow[storageName]?.getItem(key) || "";
-                    const info = inspectCustomerToken(token);
-                    if (token && !info.expired) return { token, source: `${storageName}.${key}`, info };
+                    addToken(
+                        unsafeWindow[storageName]?.getItem(key) || "",
+                        `${storageName}.${key}`
+                    );
                 } catch {}
             }
         }
-        return null;
+        return tokens;
     }
 
-    function clearCustomerToken(token) {
-        if (!token) return;
+    function addSessionTokenCandidate(candidate) {
+        const info = candidate?.info || inspectCustomerToken(candidate?.token || "");
+        if (!info.valid || info.expired) return;
+        if (sessionTokenCandidates.some((item) => item.token === candidate.token)) return;
+        sessionTokenCandidates.push({ ...candidate, info });
+    }
 
-        for (const storageName of ["localStorage", "sessionStorage"]) {
-            for (const key of ["customerToken", "customerSessionToken"]) {
-                try {
-                    if (unsafeWindow[storageName]?.getItem(key) === token) {
-                        unsafeWindow[storageName].removeItem(key);
-                    }
-                } catch {}
-            }
+    function selectSessionToken(index) {
+        const candidate = sessionTokenCandidates[index];
+        if (!candidate) return false;
+        sessionTokenIndex = index;
+        if (candidate.provider) activeRelay = candidate.provider;
+        const providerData = candidate.provider?.initData || activeRelay?.initData || initData || {};
+        initData = { ...providerData, tok: candidate.token };
+        debugState.activeProvider = activeRelay?.id || "work-direct";
+        debugState.protocol.sessionToken = {
+            ...(debugState.protocol.sessionToken || {}),
+            source: candidate.source,
+            attempt: index + 1,
+            candidates: sessionTokenCandidates.map((item) => item.source),
+            confirmed: false
+        };
+        return true;
+    }
+
+    function capturePageSessionToken(value) {
+        if (pageSessionToken) return;
+        try {
+            const url = new URL(String(value), location.href);
+            if (!url.pathname.includes("/_api/v2/ws")) return;
+            const token = url.searchParams.get("customerSessionToken") || "";
+            const info = inspectCustomerToken(token);
+            if (!info.valid || info.expired) return;
+            pageSessionToken = token;
+            pageSessionTokenResolve?.({ token, source: "websocket de Work.ink", info });
+        } catch {}
+    }
+
+    function retryWithNextSessionToken() {
+        if (sessionRetryInProgress || finished || redirectScheduled) return false;
+        const nextIndex = sessionTokenIndex + 1;
+        if (!connectionParameters || !selectSessionToken(nextIndex)) return false;
+        sessionRetryInProgress = true;
+        if (linkInfoTimer) {
+            clearTimeout(linkInfoTimer);
+            linkInfoTimer = null;
         }
-
-        try { if (unsafeWindow.customerToken === token) unsafeWindow.customerToken = ""; } catch {}
-        try { if (unsafeWindow.customerSessionToken === token) unsafeWindow.customerSessionToken = ""; } catch {}
+        try { realWebSocket?.close(); } catch {}
+        updateStatus(`El primer token fue rechazado. Probando la sesión alternativa ${nextIndex + 1}/${sessionTokenCandidates.length}...`);
+        setTimeout(() => {
+            sessionRetryInProgress = false;
+            openWebSocket(
+                connectionParameters.userId,
+                connectionParameters.custom,
+                connectionParameters.serverOverride,
+                connectionParameters.monocle
+            );
+        }, 120);
+        return true;
     }
 
     function sendRaw(message) {
@@ -1588,6 +1654,10 @@
 
         if (packet.type === SERVER_PACKET.LINK_INFO && payload) {
             if (!linkInfoReceivedAt) linkInfoReceivedAt = Date.now();
+            persistCustomerToken(initData?.tok || "");
+            if (debugState.protocol.sessionToken) {
+                debugState.protocol.sessionToken.confirmed = true;
+            }
             debugState.linkInfo = JSON.parse(JSON.stringify(payload));
             const neededOffers = Number(payload.monetizationsNeeded);
             if (!latestOffersState && Number.isFinite(neededOffers)) {
@@ -1620,19 +1690,15 @@
             const message = String(payload?.message || "Work.ink rechazó la conexión WebSocket");
             const invalidToken = isLoginError(message);
             const displayMessage = invalidToken
-                ? "El token de sesión de Work.ink no es válido. Crea una cuenta o inicia sesión en Work.ink y vuelve a cargar esta página."
+                ? "Work.ink rechazó todos los tokens disponibles. Tu cuenta puede seguir conectada, pero el token interno no es válido."
                 : message;
             debugState.protocol.serverError = { sequence, time: Date.now(), message, displayMessage };
-            if (invalidToken) clearCustomerToken(initData?.tok || "");
             if (linkInfoTimer) {
                 clearTimeout(linkInfoTimer);
                 linkInfoTimer = null;
             }
+            if (invalidToken && retryWithNextSessionToken()) return;
             finished = true;
-            if (invalidToken) {
-                showLoginRequired();
-                return;
-            }
             showError(displayMessage);
             try { realWebSocket?.close(); } catch {}
             return;
@@ -1985,7 +2051,10 @@
         if (response.success === false && response.error) {
             const responseError = String(response.error);
             if (isLoginError(responseError)) {
-                showLoginRequired();
+                if (!retryWithNextSessionToken()) {
+                    finished = true;
+                    showError("Work.ink rechazó todos los tokens disponibles. Tu cuenta puede seguir conectada, pero el token interno no es válido.");
+                }
             } else {
                 finished = true;
                 showError(responseError);
@@ -2134,7 +2203,7 @@
             });
         }
 
-        if (finished) return;
+        if (finished || sessionRetryInProgress) return;
 
         if (directMode) {
             queueWorkDirect(data, true);
@@ -2164,6 +2233,7 @@
     }
 
     function openWebSocket(userId, custom, serverOverride, monocle) {
+        connectionParameters = { userId, custom, serverOverride, monocle };
         const token = initData?.tok || "";
         const webSocketUrl = [
             "wss://work.ink/_api/v2/ws",
@@ -2176,12 +2246,14 @@
             `&monocleAssessment=${encodeURIComponent(monocle || "")}`
         ].join("");
 
-        realWebSocket = new originalWebSocket(webSocketUrl);
+        const socket = new originalWebSocket(webSocketUrl);
+        realWebSocket = socket;
         linkInfoTimer = setTimeout(() => {
-            if (!finished && !executionStarted) startDirectFallback(monocle);
+            if (socket === realWebSocket && !finished && !executionStarted) startDirectFallback(monocle);
         }, DESTINATION_TIMEOUT);
 
-        realWebSocket.onopen = () => {
+        socket.onopen = () => {
+            if (socket !== realWebSocket) return;
             if (directMode) {
                 startDirectFallback(monocle);
             } else {
@@ -2190,12 +2262,16 @@
                 updateStatus("Conectado. Esperando la información del enlace...");
             }
         };
-        realWebSocket.onmessage = (event) => relayIncomingMessage(event.data);
-        realWebSocket.onerror = (webSocketError) => {
+        socket.onmessage = (event) => {
+            if (socket === realWebSocket) relayIncomingMessage(event.data);
+        };
+        socket.onerror = (webSocketError) => {
+            if (socket !== realWebSocket) return;
             error("Error de WebSocket", webSocketError);
             if (!finished) updateStatus("La conexión WebSocket falló; preparando un nuevo intento...");
         };
-        realWebSocket.onclose = (event) => {
+        socket.onclose = (event) => {
+            if (socket !== realWebSocket) return;
             warn("WebSocket cerrado", event.code, event.reason);
         };
     }
@@ -2217,12 +2293,18 @@
         unsafeWindow.WebSocket = new Proxy(originalWebSocket, {
             construct(target, args) {
                 const url = String(args?.[0] || "");
-                if (url.includes("work.ink")) return fakeWebSocket();
+                if (url.includes("work.ink")) {
+                    capturePageSessionToken(url);
+                    return fakeWebSocket();
+                }
                 return Reflect.construct(target, args);
             },
             apply(target, thisArgument, args) {
                 const url = String(args?.[0] || "");
-                if (url.includes("work.ink")) return fakeWebSocket();
+                if (url.includes("work.ink")) {
+                    capturePageSessionToken(url);
+                    return fakeWebSocket();
+                }
                 return Reflect.apply(target, thisArgument, args);
             }
         });
@@ -2230,14 +2312,16 @@
     }
 
     async function initialize() {
+        installWebSocketStub();
+        const storedTokenSnapshot = getStoredCustomerTokens();
         if (await waitForCloudflarePreflight()) {
             debugState.phase = "cloudflare";
             log("Cloudflare sigue activo; la interfaz permanecerá oculta");
+            unsafeWindow.WebSocket = originalWebSocket;
             return;
         }
 
         mountInterface();
-        installWebSocketStub();
 
         try {
             updateStatus("Esperando el token de verificación del bot de Work.ink...");
@@ -2256,7 +2340,7 @@
                     if (!response.ok) return null;
                     const providerInitData = await response.json();
                     const tokenInfo = inspectCustomerToken(providerInitData?.tok || "");
-                    if (!providerInitData?.tok || tokenInfo.expired) return null;
+                    if (!tokenInfo.valid || tokenInfo.expired) return null;
                     return { ...provider, initData: providerInitData, tokenInfo };
                 } catch (providerError) {
                     warn(`No se pudo inicializar ${provider.id}`, providerError);
@@ -2266,33 +2350,43 @@
             relayProviders = initializedProviders.filter(Boolean);
             activeRelay = relayProviders[0] || null;
             initData = activeRelay?.initData || null;
-            const storedToken = getStoredCustomerToken();
-            const selectedToken = initData?.tok
-                ? { token: initData.tok, source: activeRelay.id, info: activeRelay.tokenInfo }
-                : storedToken;
+            const capturedToken = pageSessionToken
+                ? { token: pageSessionToken, source: "websocket de Work.ink", info: inspectCustomerToken(pageSessionToken) }
+                : await Promise.race([
+                    pageSessionTokenPromise,
+                    sleep(800).then(() => null)
+                ]);
+            sessionTokenCandidates = [];
+            addSessionTokenCandidate(capturedToken);
+            for (const storedToken of storedTokenSnapshot) addSessionTokenCandidate(storedToken);
+            for (const provider of relayProviders) {
+                addSessionTokenCandidate({
+                    token: provider.initData.tok,
+                    source: provider.id,
+                    info: provider.tokenInfo,
+                    provider
+                });
+            }
             debugState.providers = relayProviders.map((provider) => ({ id: provider.id, ready: true }));
             debugState.activeProvider = activeRelay?.id || "work-direct";
             debugState.protocol.sessionToken = {
-                source: selectedToken?.source || null,
+                source: null,
                 relay: activeRelay?.tokenInfo || null,
-                storedAvailable: Boolean(storedToken)
+                storedAvailable: storedTokenSnapshot.length > 0,
+                pageTokenCaptured: Boolean(capturedToken),
+                candidates: sessionTokenCandidates.map((candidate) => candidate.source),
+                confirmed: false
             };
 
-            if (!selectedToken) {
+            if (!selectSessionToken(0)) {
                 showLoginRequired();
                 return;
             }
 
-            if (!initData) {
-                initData = { tok: selectedToken.token };
-                directMode = true;
-            } else {
-                initData.tok = selectedToken.token;
-            }
-            persistCustomerToken(selectedToken.token);
+            directMode = relayProviders.length === 0;
             log("Métodos inicializados", {
                 hasToken: true,
-                tokenSource: selectedToken.source,
+                tokenSource: debugState.protocol.sessionToken.source,
                 providers: relayProviders.map((provider) => provider.id),
                 hasMonoclePacket: Boolean(initData?.mcl),
                 hasPinger: Boolean(initData?.pinger)
