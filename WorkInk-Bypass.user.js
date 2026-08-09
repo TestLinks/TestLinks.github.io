@@ -1,10 +1,10 @@
 // ==UserScript==
-// @name         Bypass de work.ink
+// @name         Workink Bypass
 // @namespace    http://tampermonkey.net/
-// @version      1.68
-// @description  Omite enlaces de Work.ink mediante una retransmisión segura de Skipped & BanHammer
-// @author       TheRealBanHammer
-// @license      MIT
+// @version      2.0.0
+// @description  Hazle bypass a los links de Workink usando métodos y APIs de herramientas populares como Bypass.Tools, Skipped, TRW & otros. Si eres dueño de una de estas herramientas, puedes hacerle skid a mi userscript, los únicos créditos que son míos son haber escrito este Userscript. Y si no eres dueño de ninguna de estas herramientas, puedes hacerle skid a mi userscript, me da igual. Si necesitas mi ayuda para programar algo, puedes contactarme - TheRealBanHammer
+// @author       TheRealBanHammer & otros
+// @license      FREE-TO-SKID
 // @match        https://work.ink/*
 // @exclude      https://work.ink/token/*
 // @run-at       document-start
@@ -12,6 +12,8 @@
 // @grant        unsafeWindow
 // @grant        GM_xmlhttpRequest
 // @connect      evade.bypass.tools
+// @connect      skipped.lol
+// @connect      work-direct.ink
 // @connect      work.ink
 // @homepageURL  https://antihambreadoscriptteam.github.io/
 // @supportURL   https://discord.gg/rTGF5xhe3h
@@ -21,8 +23,12 @@
     "use strict";
 
     const DEBUG = true;
-    const BUILD = "2026-09-08-01";
-    const EVADE_BASE = "https://evade.bypass.tools";
+    const BUILD = "2026-08-09-01";
+    const RELAY_PROVIDERS = Object.freeze([
+        { id: "bypass-tools", base: "https://evade.bypass.tools" },
+        { id: "skipped", base: "https://skipped.lol" }
+    ]);
+    const WORK_DIRECT_BASE = "https://work-direct.ink";
     const TURNSTILE_SITE_KEY = "0x4AAAAAAAJoXhmMXwq7jgK9";
     const HCAPTCHA_SITE_KEY = "74184788-498a-4910-ba14-be9c2acc3f98";
     const WORKINK_OUTER_KEY = "FOyWLycLacw35PbZpwK8Q3N6ouw6PBQ2snZHMIDmXrUXoCUXv7XgOiVlrl9NMn2p";
@@ -48,11 +54,10 @@
         [SERVER_PACKET.MONETIZATION]: { type: "string", payload: "object" }
     });
     const MINIMUM_REDIRECT_SECONDS = 0;
-    const CUSTOM_OFFER_READY_TIMEOUT = 20000;
-    const CUSTOM_OFFER_PROGRESS_TIMEOUT = 45000;
-    const OFFER_GOAL_GRACE_TIMEOUT = 8000;
-    const OFFER_STATE_SYNC_TIMEOUT = 2000;
-    const DESTINATION_TIMEOUT = 15000;
+    const CUSTOM_OFFER_PROGRESS_TIMEOUT = 6000;
+    const OFFER_GOAL_GRACE_TIMEOUT = 5000;
+    const DESTINATION_TIMEOUT = 12000;
+    const DIRECT_DESTINATION_TIMEOUT = 35000;
 
     if (location.pathname.startsWith("/token/")) return;
 
@@ -68,6 +73,7 @@
     const startTime = Date.now();
     const relaySession = Math.random().toString(36).substring(2, 15);
     const originalWebSocket = unsafeWindow.WebSocket;
+    const originalFetch = unsafeWindow.fetch.bind(unsafeWindow);
 
     let realWebSocket = null;
     let initData = null;
@@ -82,11 +88,19 @@
     let redirectScheduled = false;
     let relayMessageSequence = 0;
     let relayNegotiationQueue = Promise.resolve();
-    let monetizationDefinitionsPromise = null;
     let latestTurnstileAction = null;
     let latestOffersState = null;
     let linkInfoReceivedAt = null;
     let offersStateSynced = false;
+    let relayProviders = [];
+    let activeRelay = null;
+    let relayMonetizationData = null;
+    let relayMonetizationDataResolve = null;
+    let lastMonocle = "";
+    let directMode = false;
+    let directFallbackPromise = null;
+    let directQueue = Promise.resolve();
+    let directDestinationResolve = null;
     let turnstileSolveSequence = 0;
     let hcaptchaSolveSequence = 0;
     const serverPacketHistory = [];
@@ -112,7 +126,10 @@
         offerAuthorization: null,
         offerSync: null,
         premiumWall: null,
-        destinationWait: null
+        destinationWait: null,
+        providers: [],
+        activeProvider: null,
+        directFallback: null
     };
 
     function packetShape(payload) {
@@ -293,6 +310,7 @@
         }
 
         .mark {
+            position: relative;
             display: grid;
             flex: 0 0 auto;
             place-items: center;
@@ -311,11 +329,28 @@
         }
 
         .mark img {
+            position: relative;
+            z-index: 1;
             display: block;
             width: 30px;
             height: 30px;
             object-fit: contain;
             filter: hue-rotate(190deg) saturate(145%) brightness(108%) contrast(105%) drop-shadow(0 8px 16px rgba(239, 68, 68, 0.22));
+        }
+
+        .mark-fallback {
+            position: absolute;
+            display: grid;
+            place-items: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #f43f5e;
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 950;
+            line-height: 1;
+            text-transform: lowercase;
         }
 
         .wordmark {
@@ -602,17 +637,23 @@
     brand.className = "brand";
     const mark = document.createElement("div");
     mark.className = "mark";
+    const logoFallback = document.createElement("span");
+    logoFallback.className = "mark-fallback";
+    logoFallback.textContent = "w";
+    logoFallback.setAttribute("aria-hidden", "true");
     const logo = document.createElement("img");
     logo.src = "https://www.google.com/s2/favicons?sz=64&domain=work.ink";
     logo.alt = "";
     logo.setAttribute("aria-hidden", "true");
+    logo.addEventListener("load", () => { logoFallback.hidden = true; });
+    logo.addEventListener("error", () => { logo.hidden = true; });
     const wordmark = document.createElement("div");
     wordmark.className = "wordmark";
     const wordmarkFirst = document.createElement("span");
     wordmarkFirst.textContent = "Work";
     const wordmarkLast = document.createElement("span");
     wordmarkLast.textContent = ".ink";
-    mark.appendChild(logo);
+    mark.append(logoFallback, logo);
     wordmark.append(wordmarkFirst, wordmarkLast);
     brand.append(mark, wordmark);
 
@@ -662,7 +703,6 @@
     card.append(brand, title, subtitle, status, footer);
     overlay.appendChild(card);
     shadow.append(style, overlay);
-    document.documentElement.appendChild(container);
 
     const captchaPortal = document.createElement("div");
     captchaPortal.id = "trbh-captcha-portal";
@@ -762,24 +802,32 @@
         }
     `;
     captchaPortal.appendChild(captchaPortalStyle);
-    document.documentElement.appendChild(captchaPortal);
-    document.documentElement.style.overflow = "hidden";
 
     let statusProgress = 5;
     let interfaceDismissed = false;
+    let interfaceMounted = false;
     let loginPromptShown = false;
-    const runtimeTimer = setInterval(() => {
-        if (interfaceDismissed || card.dataset.state === "error") return;
-        runtimeText.textContent = `Transcurrido ${Math.floor((Date.now() - startTime) / 1000)}s`;
-    }, 1000);
+    let runtimeTimer = null;
+
+    function mountInterface() {
+        if (interfaceMounted || interfaceDismissed) return;
+        interfaceMounted = true;
+        document.documentElement.append(container, captchaPortal);
+        document.documentElement.style.overflow = "hidden";
+        runtimeTimer = setInterval(() => {
+            if (interfaceDismissed || card.dataset.state === "error") return;
+            runtimeText.textContent = `Transcurrido ${Math.floor((Date.now() - startTime) / 1000)}s`;
+        }, 1000);
+    }
 
     function dismissInterface() {
         if (interfaceDismissed) return;
         interfaceDismissed = true;
-        clearInterval(runtimeTimer);
+        if (runtimeTimer) clearInterval(runtimeTimer);
         container.remove();
         captchaPortal.remove();
-        document.documentElement.style.overflow = previousOverflow;
+        if (interfaceMounted) document.documentElement.style.overflow = previousOverflow;
+        interfaceMounted = false;
     }
 
     function isLoginError(message) {
@@ -831,7 +879,9 @@
 
     function redirect(destination) {
         if (!destination || redirectScheduled) return;
+        finished = true;
         redirectScheduled = true;
+        directDestinationResolve?.(destination);
         unsafeWindow.wokeresponse = destination;
 
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
@@ -875,32 +925,253 @@
         });
     }
 
-    function pageFetchJson(url, timeout = 10000) {
-        return new Promise((resolve, reject) => {
-            const request = new unsafeWindow.XMLHttpRequest();
-            request.open("GET", url, true);
-            request.withCredentials = true;
-            request.timeout = timeout;
-            request.onload = () => {
-                if (request.status < 200 || request.status >= 300) {
-                    reject(new Error(`La solicitud de la página devolvió ${request.status}`));
-                    return;
-                }
+    function relayResponseScore(response) {
+        if (!response || typeof response !== "object") return -1;
+        if (response.conditions === "destination" && response.destinationURL) return 100;
+        if (response.success === false && response.error) return 55;
+        if (
+            response.sM?.length ||
+            response.raM?.length ||
+            response.mM?.length ||
+            response.coM?.length ||
+            Object.prototype.hasOwnProperty.call(response, "sM")
+        ) return 80;
+        if (response.tst || response.hcresp) return 70;
+        if (response.em || response.pingMsg || response.conditions) return 60;
+        return 10;
+    }
 
-                try {
-                    resolve(JSON.parse(request.responseText));
-                } catch (parseError) {
-                    reject(parseError);
-                }
-            };
-            request.onerror = () => reject(new Error("La solicitud de la página falló"));
-            request.ontimeout = () => reject(new Error(`La solicitud de la página agotó el tiempo de espera: ${url}`));
-            request.send();
+    async function requestRelay(provider, payload, timeout = 15000) {
+        const response = await gmFetch(`${provider.base}/api/evade/negotiate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            timeout
         });
+        if (!response.ok) throw new Error(`${provider.id}: HTTP ${response.status}`);
+        return response.json();
+    }
+
+    async function negotiateWithRelays(payload, timeout = 15000) {
+        if (relayProviders.length === 0) return null;
+        const ordered = activeRelay
+            ? [activeRelay, ...relayProviders.filter((provider) => provider.id !== activeRelay.id)]
+            : [...relayProviders];
+        const results = await Promise.all(ordered.map(async (provider) => {
+            try {
+                return { provider, response: await requestRelay(provider, payload, timeout) };
+            } catch (relayError) {
+                warn(`Falló el relay ${provider.id}`, relayError);
+                return { provider, response: null };
+            }
+        }));
+        const selected = results
+            .filter((result) => result.response)
+            .sort((left, right) => {
+                const difference = relayResponseScore(right.response) - relayResponseScore(left.response);
+                if (difference !== 0) return difference;
+                if (activeRelay && left.provider.id === activeRelay.id) return -1;
+                if (activeRelay && right.provider.id === activeRelay.id) return 1;
+                return ordered.indexOf(left.provider) - ordered.indexOf(right.provider);
+            })[0] || null;
+        if (!selected) return null;
+        activeRelay = selected.provider;
+        debugState.activeProvider = activeRelay.id;
+        return selected.response;
     }
 
     function sleep(milliseconds) {
         return new Promise((resolve) => setTimeout(resolve, milliseconds));
+    }
+
+    function parseSSEText(text) {
+        const responses = [];
+        const messages = [];
+        for (const line of String(text || "").split(/\r?\n/)) {
+            if (!line.startsWith("data: ")) continue;
+            try {
+                const event = JSON.parse(line.slice(6));
+                if (event.type === "r") responses.push(event.pyl);
+                else if (event.type === "m") messages.push(event.msg);
+                else if (event.type === "error") messages.push(`ERROR: ${event.msg}`);
+            } catch {}
+        }
+        return { responses, messages };
+    }
+
+    async function readSSEStream(response) {
+        if (!response.body?.getReader) return parseSSEText(await response.text());
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        const responses = [];
+        const messages = [];
+        let buffer = "";
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+                buffer = lines.pop() || "";
+                for (const line of lines) {
+                    if (!line.startsWith("data: ")) continue;
+                    try {
+                        const event = JSON.parse(line.slice(6));
+                        if (event.type === "r") responses.push(event.pyl);
+                        else if (event.type === "m") messages.push(event.msg);
+                        else if (event.type === "error") messages.push(`ERROR: ${event.msg}`);
+                        else if (event.type === "done") return { responses, messages };
+                    } catch {}
+                }
+            }
+        } finally {
+            reader.releaseLock();
+        }
+        return { responses, messages };
+    }
+
+    async function runOperaSpoof() {
+        try {
+            const affiliateResponse = await gmFetch("https://work.ink/_api/v2/affiliate/operaGX", {
+                method: "HEAD",
+                headers: { "User-Agent": "Opera Installer/1.0" },
+                timeout: 3000
+            });
+            const cookieMatch = affiliateResponse.headers.match(/__cf_bm=([^;\s]+)/);
+            await gmFetch("https://work.ink/_api/v2/callback/operaGX", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "User-Agent": "Opera Installer/1.0",
+                    ...(cookieMatch ? { Cookie: `__cf_bm=${cookieMatch[1]}` } : {})
+                },
+                body: JSON.stringify({ noteligible: true }),
+                timeout: 3000
+            });
+            return true;
+        } catch (operaError) {
+            warn("Falló el método de Opera GX", operaError);
+            return false;
+        }
+    }
+
+    async function processDirectCommand(command) {
+        if (typeof command !== "string" || !command) return;
+        if (command.startsWith("USC:wait(")) {
+            const match = command.match(/USC:wait\((\d+(?:\.\d+)?)\)/);
+            if (match) await sleep(Math.min(15000, Number(match[1]) * 1000));
+            return;
+        }
+        if (command.startsWith("USC:setrep")) {
+            const start = command.indexOf("(");
+            const end = command.lastIndexOf(")");
+            const destination = start >= 0
+                ? command.slice(start + 1, end > start ? end : undefined).trim()
+                : "";
+            if (/^https?:\/\//i.test(destination)) {
+                directDestinationResolve?.(destination);
+                redirect(destination);
+            }
+            return;
+        }
+        if (command.startsWith("USC:startOperaGXSpoofing()")) {
+            await runOperaSpoof();
+            return;
+        }
+        if (command.startsWith("USC:eval(")) {
+            const code = command.slice(9, command.endsWith(")") ? -1 : undefined);
+            if (/hcaptcha|loadhcaptcha/i.test(code)) {
+                const token = await solveHcaptcha(
+                    "Completa el desafío solicitado por el método directo",
+                    "Completa hCaptcha para continuar con el método directo..."
+                );
+                await requestWorkDirect(`HCTKA:${token}`);
+            } else if (/turnstile|onturnstile/i.test(code)) {
+                const token = await solveTurnstile(
+                    latestTurnstileAction,
+                    "Completa la verificación del método directo",
+                    "Completa Turnstile para continuar con el método directo..."
+                );
+                await requestWorkDirect(`TTTKA:${token}`);
+            } else {
+                warn("El método directo solicitó una acción no admitida de forma segura");
+            }
+            return;
+        }
+        if (!command.startsWith("USC:")) sendRaw(command);
+    }
+
+    async function requestWorkDirect(payload, encodePayload = false) {
+        const body = JSON.stringify({
+            payl: encodePayload ? encodeURIComponent(payload) : payload,
+            pal: location.href,
+            sid: relaySession,
+            UVA: "V3.0.5",
+            SST: true
+        });
+        let result;
+        try {
+            const response = await originalFetch(`${WORK_DIRECT_BASE}/api/clientSides/workink`, {
+                method: "POST",
+                headers: {
+                    Accept: "text/event-stream",
+                    "Content-Type": "application/json"
+                },
+                body
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            result = await readSSEStream(response);
+        } catch (streamError) {
+            const response = await gmFetch(`${WORK_DIRECT_BASE}/api/clientSides/workink`, {
+                method: "POST",
+                headers: {
+                    Accept: "text/event-stream",
+                    "Content-Type": "application/json"
+                },
+                body,
+                timeout: DIRECT_DESTINATION_TIMEOUT
+            });
+            result = parseSSEText(await response.text());
+        }
+        for (const message of result.messages) {
+            if (typeof message !== "string" || !message.trim()) continue;
+            if (message.startsWith("ERROR:")) warn("El método directo informó un error", message.slice(6).trim());
+            else log("Mensaje del método directo", message.trim());
+        }
+        for (const response of result.responses) await processDirectCommand(response);
+        return result;
+    }
+
+    function queueWorkDirect(payload, encodePayload = false) {
+        directQueue = directQueue
+            .then(() => requestWorkDirect(payload, encodePayload))
+            .catch((directError) => warn("Falló una solicitud del método directo", directError));
+        return directQueue;
+    }
+
+    function startDirectFallback(monocle) {
+        if (directFallbackPromise) return directFallbackPromise;
+        directMode = true;
+        debugState.activeProvider = "work-direct";
+        debugState.directFallback = { startedAt: Date.now(), result: "waiting" };
+        updateStatus("Probando el método directo de respaldo...", 82);
+        directFallbackPromise = new Promise((resolve) => {
+            const timer = setTimeout(() => {
+                directDestinationResolve = null;
+                debugState.directFallback.result = "timeout";
+                debugState.directFallback.completedAt = Date.now();
+                resolve(null);
+            }, DIRECT_DESTINATION_TIMEOUT);
+            directDestinationResolve = (destination) => {
+                clearTimeout(timer);
+                directDestinationResolve = null;
+                debugState.directFallback.result = "received";
+                debugState.directFallback.completedAt = Date.now();
+                resolve(destination);
+            };
+            queueWorkDirect(`SMNCADV:${monocle}`);
+        });
+        return directFallbackPromise;
     }
 
     function waitForBody() {
@@ -913,6 +1184,29 @@
                 resolve(document.body);
             }, 50);
         });
+    }
+
+    function isCloudflareChallengeActive() {
+        const pageText = document.documentElement?.innerHTML?.toLowerCase() || "";
+        const pageTitle = document.title.toLowerCase();
+        return pageText.includes("/cdn-cgi/challenge-platform/") ||
+            pageText.includes("cf-browser-verification") ||
+            pageText.includes("window._cf_chl_opt") ||
+            pageTitle.includes("just a moment") ||
+            Boolean(document.querySelector(
+                "#challenge-running, #challenge-stage, form#challenge-form, iframe[src*='challenges.cloudflare.com']"
+            ));
+    }
+
+    async function waitForCloudflarePreflight() {
+        await waitForBody();
+        if (isCloudflareChallengeActive()) return true;
+        if (document.readyState === "loading") {
+            await new Promise((resolve) => {
+                document.addEventListener("DOMContentLoaded", resolve, { once: true });
+            });
+        }
+        return isCloudflareChallengeActive();
     }
 
     function waitForMonocle() {
@@ -1177,22 +1471,6 @@
         });
     }
 
-    function encodePacketPart(value, key) {
-        const keyBytes = [...key].map((character) => character.charCodeAt(0) & 255);
-        const valueBytes = new TextEncoder().encode(value);
-        let seed = Date.now() % 256;
-        let encoded = seed.toString(16).padStart(2, "0");
-
-        for (let index = 0; index < valueBytes.length; index += 1) {
-            const keyByte = keyBytes[(index * 2 + seed) % keyBytes.length];
-            const encrypted = ((valueBytes[index] ^ keyByte) + index % 8) % 256;
-            encoded += encrypted.toString(16).padStart(2, "0");
-            seed = (seed * 19 + 29) % 256;
-        }
-
-        return encoded;
-    }
-
     function decodePacketPart(value, key) {
         const keyBytes = [...key].map((character) => character.charCodeAt(0) & 255);
         const decoded = [];
@@ -1207,11 +1485,6 @@
         }
 
         return new TextDecoder().decode(Uint8Array.from(decoded));
-    }
-
-    function encodeWorkinkPacket(type, payload) {
-        const encryptedPayload = encodePacketPart(JSON.stringify(payload), WORKINK_INNER_KEY);
-        return encodePacketPart(JSON.stringify({ type, payload: encryptedPayload }), WORKINK_OUTER_KEY);
     }
 
     function decodeWorkinkPacket(value) {
@@ -1283,10 +1556,6 @@
             return Object.keys(authorized).filter((id) => authorized[id]);
         }
         return [];
-    }
-
-    function isOfferAuthorized(packet, id) {
-        return getOfferIds(packet).some((offerId) => String(offerId) === String(id));
     }
 
     function handleDecodedServerPacket(packet, sequence, raw) {
@@ -1391,112 +1660,6 @@
         );
     }
 
-    function isOfferGoalPacket(packet) {
-        return packet.type === SERVER_PACKET.OFFERS_STATE &&
-            Number(packet.payload?.completedOffers) >= Number(packet.payload?.neededOffers);
-    }
-
-    async function waitForOfferStateSync() {
-        if (offersStateSynced || finished) return;
-        const afterSequence = relayMessageSequence;
-        debugState.offerSync = { startedAt: Date.now(), afterSequence, result: "waiting" };
-        updateStatus("Sincronizando el estado de ofertas de Work.ink...");
-        const result = await waitForServerPacket(
-            afterSequence,
-            (packet) =>
-                packet.type === SERVER_PACKET.OFFERS_STATE ||
-                packet.type === SERVER_PACKET.LINK_DESTINATION ||
-                packet.type === SERVER_PACKET.ERROR,
-            OFFER_STATE_SYNC_TIMEOUT
-        );
-        debugState.offerSync.result = result?.packet?.type || (offersStateSynced ? "already-synced" : "timeout");
-        debugState.offerSync.completedAt = Date.now();
-    }
-
-    async function authorizeCustomOffer(item, index, total, action) {
-        if (isOfferGoalReached()) return true;
-        const id = item.id;
-        const turnstileToken = await solveTurnstile(
-            latestTurnstileAction || action,
-            `Verifica la monetización ${index + 1}/${total}`,
-            `Completa la verificación de Turnstile para la monetización ${id}...`
-        );
-        const afterTurnstile = relayMessageSequence;
-        const turnstileResult = waitForServerPacket(
-            afterTurnstile,
-            (packet) =>
-                isOfferAuthorized(packet, id) ||
-                isOfferGoalPacket(packet) ||
-                packet.type === SERVER_PACKET.ERROR ||
-                packet.type === SERVER_PACKET.START_TURNSTILE_CHECK &&
-                    String(packet.payload?.monetizationId) === String(id) ||
-                packet.type === SERVER_PACKET.START_HCAPTCHA_CHECK &&
-                    String(packet.payload?.monetizationId) === String(id),
-            CUSTOM_OFFER_READY_TIMEOUT
-        );
-
-        const turnstilePacket = encodeWorkinkPacket("c_turnstile_response", {
-            token: turnstileToken,
-            monetizationId: Number(id)
-        });
-        log(`Enviando el paquete de Turnstile de la monetización ${id}`, {
-            packetLength: turnstilePacket.length,
-            payloadKeys: ["token", "monetizationId"]
-        });
-        sendRaw(turnstilePacket);
-
-        let result = await turnstileResult;
-        if (!result || result.packet.type === SERVER_PACKET.ERROR) return false;
-        if (isOfferGoalPacket(result.packet) || isOfferGoalReached()) return true;
-        if (isOfferAuthorized(result.packet, id)) return true;
-        if (result.packet.type === SERVER_PACKET.START_TURNSTILE_CHECK) return false;
-
-        const requestedSolves = Math.max(1, Number.parseInt(result.packet.payload?.solvesNeeded, 10) || 1);
-        for (let solve = 0; solve < requestedSolves; solve += 1) {
-            const hcaptchaToken = await solveHcaptcha(
-                `Verifica la monetización ${index + 1}/${total}`,
-                `Completa hCaptcha ${solve + 1}/${requestedSolves} para la monetización ${id}...`
-            );
-            const afterHcaptcha = relayMessageSequence;
-            const hcaptchaResult = waitForServerPacket(
-                afterHcaptcha,
-                (packet) =>
-                    isOfferAuthorized(packet, id) ||
-                    isOfferGoalPacket(packet) ||
-                    packet.type === SERVER_PACKET.ERROR ||
-                    packet.type === SERVER_PACKET.HCAPTCHA_OKAY,
-                CUSTOM_OFFER_READY_TIMEOUT
-            );
-            const hcaptchaPacket = encodeWorkinkPacket("c_hcaptcha_response", {
-                token: hcaptchaToken,
-                monetizationId: Number(id)
-            });
-            log(`Enviando el paquete de hCaptcha de la monetización ${id}`, {
-                solve: solve + 1,
-                solvesNeeded: requestedSolves,
-                packetLength: hcaptchaPacket.length
-            });
-            sendRaw(hcaptchaPacket);
-            result = await hcaptchaResult;
-            if (!result || result.packet.type === SERVER_PACKET.ERROR) return false;
-            if (isOfferGoalPacket(result.packet) || isOfferGoalReached()) return true;
-            if (isOfferAuthorized(result.packet, id)) return true;
-        }
-
-        const authorization = await waitForServerPacket(
-            result?.sequence || relayMessageSequence,
-            (packet) =>
-                isOfferAuthorized(packet, id) ||
-                isOfferGoalPacket(packet) ||
-                packet.type === SERVER_PACKET.ERROR,
-            CUSTOM_OFFER_READY_TIMEOUT
-        );
-        return Boolean(authorization && (
-            isOfferAuthorized(authorization.packet, id) ||
-            isOfferGoalPacket(authorization.packet)
-        ));
-    }
-
     function findOfferUrl(urlMap, offer, offerIndex) {
         const readUrl = (entry) => {
             if (typeof entry === "string") return entry;
@@ -1536,72 +1699,46 @@
         return null;
     }
 
-    async function getMonetizationDefinition(id) {
-        if (!monetizationDefinitionsPromise) {
-            monetizationDefinitionsPromise = pageFetchJson(
-                "/_api/v2/redirection/monetizationData"
-            ).catch((definitionError) => {
-                warn("No se pudieron cargar las definiciones de monetización de Work.ink", definitionError);
-                return {};
-            });
-        }
-
-        const definitions = await monetizationDefinitionsPromise;
-        return definitions?.[String(id)] || definitions?.[id] || null;
-    }
-
-    async function buildLocalCustomOffers(ids) {
-        const offers = [];
-        for (const id of ids) {
-            const definition = await getMonetizationDefinition(id);
-            if (!definition?.name) continue;
-            const packetPayload = (event) => ({
-                type: definition.name,
-                payload: { event },
-                s: WORKINK_OUTER_KEY
-            });
-            offers.push({
-                id: Number(id),
-                name: definition.name,
-                definition,
-                initEncrypted: encodeWorkinkPacket("c_monetization", packetPayload("init")),
-                startEncrypted: encodeWorkinkPacket("c_monetization", packetPayload("start"))
-            });
-        }
-        return offers;
-    }
-
     async function executeRelayPackets(data) {
         const {
             fM, flM, sM, sU, raM, mM, coM, pinger, envC, mUrl, tat, mdDism, monetIds
         } = data;
 
         let customOffers = Array.isArray(coM) ? coM : [];
-        let builtLocalCustomOffers = false;
-        const currentMonetizationIds = Array.isArray(monetIds)
-            ? monetIds
-            : debugState.linkInfo?.monetizations;
-        if (customOffers.length === 0 && Array.isArray(currentMonetizationIds)) {
-            customOffers = await buildLocalCustomOffers(currentMonetizationIds);
-            builtLocalCustomOffers = customOffers.length > 0;
-            log("Se crearon localmente las ofertas actuales de Work.ink porque la retransmisión no devolvió ninguna.", customOffers.map((item) => ({
-                id: item.id,
-                name: item.name
-            })));
+        let monetizationPackets = Array.isArray(mM) ? mM : [];
+        if (monetizationPackets.length === 0 && customOffers.length === 0 && monetIds?.length) {
+            updateStatus("Esperando los paquetes de monetización del relay...");
+            const delayedData = relayMonetizationData || await new Promise((resolve) => {
+                const timer = setTimeout(() => {
+                    relayMonetizationDataResolve = null;
+                    resolve(null);
+                }, 6000);
+                relayMonetizationDataResolve = (value) => {
+                    clearTimeout(timer);
+                    relayMonetizationDataResolve = null;
+                    resolve(value);
+                };
+            });
+            if (delayedData) {
+                monetizationPackets = Array.isArray(delayedData.mM) ? delayedData.mM : [];
+                customOffers = Array.isArray(delayedData.coM) ? delayedData.coM : [];
+            }
         }
 
         if (envC) sendRaw(envC);
         if (pinger) sendRaw(pinger);
         if (mdDism) {
-            log("Enviando inmediatamente la confirmación del modal premium de Work.ink.");
-            sendRaw(mdDism.encrypted || mdDism);
+            const premiumPacket = mdDism.encrypted || mdDism;
+            for (const delay of [0, 2000, 6000, 10000]) {
+                setTimeout(() => {
+                    if (!finished) sendRaw(premiumPacket);
+                }, delay);
+            }
             debugState.premiumWall = {
                 sentAt: Date.now(),
-                mode: "immediate"
+                mode: "non-blocking-retry"
             };
-            await sleep(100);
         }
-        if (builtLocalCustomOffers) await waitForOfferStateSync();
         if (finished) return;
 
         if (Array.isArray(sM)) {
@@ -1619,12 +1756,12 @@
         if (Array.isArray(raM) && raM.length > 0) {
             updateStatus("Enviando paquetes de artículos leídos...");
             for (const article of raM) sendRaw(article.encrypted || article);
-            await waitForSignal((handler) => { offersDone = handler; }, 20000);
+            await waitForSignal((handler) => { offersDone = handler; }, 6000);
             if (finished) return;
         }
 
         const monetizations = [
-            ...(Array.isArray(mM) ? mM.map((item) => ({ ...item, source: "monetization" })) : []),
+            ...monetizationPackets.map((item) => ({ ...item, source: "monetization" })),
             ...customOffers.map((item) => ({ ...item, source: "customOffer" }))
         ].sort((left, right) => left.id - right.id);
 
@@ -1660,8 +1797,7 @@
                 const relayOfferUrl =
                     findOfferUrl(mUrl, item, customOfferIndex) ||
                     findOfferUrl(sU, item, customOfferIndex);
-                const definition = item.definition || await getMonetizationDefinition(item.id);
-                let offerUrl = relayOfferUrl || definition?.offerUrl || null;
+                let offerUrl = relayOfferUrl || null;
                 if (offerUrl === "https://example.com" || offerUrl === "http://example.com") offerUrl = null;
 
                 log(`Detalles del paquete de la oferta personalizada ${item.id}`, {
@@ -1677,9 +1813,7 @@
                         ? Object.keys(sU[0])
                         : [],
                     hasOfferUrl: Boolean(offerUrl),
-                    offerUrlSource: relayOfferUrl ? "relay" : definition?.offerUrl ? "workink-definition" : null,
-                    definitionTemplate: definition?.template || null,
-                    definitionName: definition?.name || null,
+                    offerUrlSource: relayOfferUrl ? "relay" : null,
                     hasCompletionPacket: Boolean(
                         item.completeEncrypted ||
                         item.finishEncrypted ||
@@ -1687,35 +1821,7 @@
                         item.encrypted
                     )
                 });
-
-                try {
-                    debugMonetization.state = "captcha";
-                    updateStatus(`Verificando la monetización ${item.id}...`);
-                    const authorized = await authorizeCustomOffer(
-                        item,
-                        index,
-                        monetizations.length,
-                        tat
-                    );
-                    if (isOfferGoalReached()) {
-                        debugMonetization.state = "not-required";
-                        log(`La monetización ${item.id} dejó de ser necesaria después de sincronizar con el servidor.`, getOfferProgress());
-                        break;
-                    }
-                    if (!authorized) {
-                        debugMonetization.state = "authorization-failed";
-                        showError(`Work.ink no autorizó la monetización ${item.id}`);
-                        return;
-                    }
-                } catch (captchaError) {
-                    debugMonetization.state = "captcha-failed";
-                    error(`Falló el CAPTCHA de la monetización ${item.id}`, captchaError);
-                    showError(`No se pudo verificar la monetización ${item.id}`);
-                    return;
-                }
-
-                log(`Monetización ${item.id} autorizada; ejecutando su flujo de un clic.`);
-                debugMonetization.state = "authorized";
+                debugMonetization.state = "sending";
 
                 const authorizedOfferUrl = findOfferUrl(
                     debugState.offerAuthorization?.urlOverrides,
@@ -1777,7 +1883,7 @@
 
             if (item.id === 80) {
                 sendRaw(raw);
-                await waitForSignal((handler) => { monetizationDone = handler; }, 140000);
+                await waitForSignal((handler) => { monetizationDone = handler; }, 6000);
                 continue;
             }
 
@@ -1788,31 +1894,11 @@
                 );
                 if (clicked) sendRaw(clicked.encrypted || JSON.stringify(clicked));
 
-                if (item.id === 25) {
-                    try {
-                        const affiliateResponse = await gmFetch(
-                            "https://work.ink/_api/v2/affiliate/operaGX",
-                            { method: "HEAD", timeout: 3000 }
-                        );
-                        const cookieMatch = affiliateResponse.headers.match(/__cf_bm=([^;\s]+)/);
-                        await gmFetch("https://work.ink/_api/v2/callback/operaGX", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                ...(cookieMatch ? { Cookie: `__cf_bm=${cookieMatch[1]}` } : {})
-                            },
-                            body: JSON.stringify({ noteligible: true }),
-                            timeout: 3000
-                        });
-                        await sleep(1200);
-                    } catch (affiliateError) {
-                        warn("Falló la devolución de Opera GX", affiliateError);
-                    }
-                }
+                if (item.id === 25) await runOperaSpoof();
 
                 if (finished) return;
                 if (flM) sendRaw(flM);
-                await waitForSignal((handler) => { monetizationDone = handler; }, 300000);
+                await waitForSignal((handler) => { monetizationDone = handler; }, 6000);
                 if (fM) sendRaw(fM);
                 continue;
             }
@@ -1838,8 +1924,7 @@
             if (finished) return;
             if (!goal && !isOfferGoalReached()) {
                 const progress = getOfferProgress();
-                showError(`El servidor confirmó solo ${progress.completedOffers}/${progress.neededOffers} ofertas`);
-                return;
+                warn(`El servidor confirmó solo ${progress.completedOffers}/${progress.neededOffers} ofertas; se continuará con el método de respaldo`);
             }
         }
 
@@ -1868,12 +1953,14 @@
         const destination = await destinationPromise;
         debugState.destinationWait.result = destination ? "received" : "timeout";
         debugState.destinationWait.completedAt = Date.now();
-        if (destination) redirect(destination);
-        else if (!finished && latestOffersState?.completedOffers === 0 && latestOffersState?.neededOffers === 0) {
-            showError(`Work.ink no devolvió el destino después de ${DESTINATION_TIMEOUT / 1000} segundos. Recarga la página e inténtalo de nuevo`);
-        } else if (!finished) {
-            showError("Work.ink no envió el destino después de confirmar las ofertas");
+        if (destination) {
+            redirect(destination);
+            return;
         }
+        if (finished) return;
+        const directDestination = await startDirectFallback(lastMonocle);
+        if (directDestination) redirect(directDestination);
+        else if (!finished) showError("Ninguno de los métodos disponibles pudo obtener el destino");
     }
 
     function handleRelayResponse(response) {
@@ -1924,6 +2011,10 @@
         if (response.conditions === "monetization_done") monetizationDone?.();
         if (response.conditions === "monetization_ack") monetizationDone?.(response);
         if (response.conditions === "offers_state") offersDone?.(response);
+        if (response.conditions === "mntd" || response.mM?.length || response.coM?.length) {
+            relayMonetizationData = response;
+            relayMonetizationDataResolve?.(response);
+        }
 
         if (response.conditions === "ping" && response.pingMsg && !pingTimer) {
             pingTimer = setTimeout(() => {
@@ -1981,14 +2072,13 @@
             try {
                 const turnstileToken = await solveTurnstile(response.tat);
                 updateStatus("Turnstile resuelto. Enviando la respuesta...");
-                const turnstilePacket = encodeWorkinkPacket("c_turnstile_response", {
-                    token: turnstileToken
-                });
-                log("Enviando el paquete inicial de Turnstile", { packetLength: turnstilePacket.length });
-                sendRaw(turnstilePacket);
+                const turnstileResponse = await negotiateWithRelays({ turnstile: turnstileToken });
+                if (!turnstileResponse?.tst) throw new Error("El relay no devolvió el paquete de Turnstile");
+                sendRaw(turnstileResponse.tst);
             } catch (turnstileError) {
                 error("Falló el envío de Turnstile", turnstileError);
-                showError("No se pudo verificar Turnstile");
+                const directDestination = await startDirectFallback(lastMonocle);
+                if (!directDestination && !finished) showError("No se pudo verificar Turnstile con ningún método");
                 return;
             }
 
@@ -1998,18 +2088,14 @@
                     try {
                         const hcaptchaToken = await solveHcaptcha();
                         updateStatus(`hCaptcha resuelto (${solve + 1}/${solvesNeeded}). Enviando la respuesta...`);
-                        const hcaptchaPacket = encodeWorkinkPacket("c_hcaptcha_response", {
-                            token: hcaptchaToken
-                        });
-                        log("Enviando el paquete inicial de hCaptcha", {
-                            solve: solve + 1,
-                            solvesNeeded,
-                            packetLength: hcaptchaPacket.length
-                        });
+                        const hcaptchaResponse = await negotiateWithRelays({ hCapToken: hcaptchaToken });
+                        const hcaptchaPacket = hcaptchaResponse?.hcresp || hcaptchaResponse?.tst;
+                        if (!hcaptchaPacket) throw new Error("El relay no devolvió el paquete de hCaptcha");
                         sendRaw(hcaptchaPacket);
                     } catch (hcaptchaError) {
                         error("Falló el envío de hCaptcha", hcaptchaError);
-                        showError("No se pudo verificar hCaptcha");
+                        const directDestination = await startDirectFallback(lastMonocle);
+                        if (!directDestination && !finished) showError("No se pudo verificar hCaptcha con ningún método");
                         return;
                     }
                 }
@@ -2048,29 +2134,27 @@
 
         if (finished) return;
 
+        if (directMode) {
+            queueWorkDirect(data, true);
+            return;
+        }
+
         relayNegotiationQueue = relayNegotiationQueue
             .then(async () => {
                 if (finished) return;
-
-                const response = await gmFetch(`${EVADE_BASE}/api/evade/negotiate`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        demands: data,
-                        direction: "incoming",
-                        session_id: relaySession,
-                        client_timestamp: Date.now()
-                    }),
-                    timeout: 15000
+                const relayResponse = await negotiateWithRelays({
+                    demands: data,
+                    direction: "incoming",
+                    session_id: relaySession,
+                    client_timestamp: Date.now()
                 });
-
-                const relayResponse = response.ok ? await response.json() : null;
                 log(`Mensaje de WebSocket procesado #${sequence}`, {
-                    status: response.status,
+                    provider: activeRelay?.id || null,
                     condition: relayResponse?.conditions || null,
                     keys: relayResponse ? Object.keys(relayResponse) : []
                 });
-                handleRelayResponse(relayResponse);
+                if (relayResponse) handleRelayResponse(relayResponse);
+                else if (!executionStarted) startDirectFallback(lastMonocle);
             })
             .catch((relayError) => {
                 error(`Falló la negociación de la retransmisión para el mensaje #${sequence}`, relayError);
@@ -2092,18 +2176,22 @@
 
         realWebSocket = new originalWebSocket(webSocketUrl);
         linkInfoTimer = setTimeout(() => {
-            if (!finished) showError("Work.ink no devolvió la información del enlace");
-        }, 15000);
+            if (!finished && !executionStarted) startDirectFallback(monocle);
+        }, DESTINATION_TIMEOUT);
 
         realWebSocket.onopen = () => {
-            if (initData?.mcl) sendRaw(initData.mcl);
-            if (initData?.pinger) sendRaw(initData.pinger);
-            updateStatus("Conectado. Esperando la información del enlace...");
+            if (directMode) {
+                startDirectFallback(monocle);
+            } else {
+                if (initData?.mcl) sendRaw(initData.mcl);
+                if (initData?.pinger) sendRaw(initData.pinger);
+                updateStatus("Conectado. Esperando la información del enlace...");
+            }
         };
         realWebSocket.onmessage = (event) => relayIncomingMessage(event.data);
         realWebSocket.onerror = (webSocketError) => {
             error("Error de WebSocket", webSocketError);
-            if (!finished) showError("Falló la conexión WebSocket");
+            if (!finished) updateStatus("La conexión WebSocket falló; preparando un nuevo intento...");
         };
         realWebSocket.onclose = (event) => {
             warn("WebSocket cerrado", event.code, event.reason);
@@ -2140,65 +2228,76 @@
     }
 
     async function initialize() {
-        installWebSocketStub();
-        await waitForBody();
-
-        const pageText = document.documentElement.innerHTML.toLowerCase();
-        if (
-            pageText.includes("/cdn-cgi/challenge-platform/") ||
-            pageText.includes("cf-browser-verification")
-        ) {
-            showError("La verificación de Cloudflare sigue activa; vuelve a cargar la página cuando termine");
+        if (await waitForCloudflarePreflight()) {
+            debugState.phase = "cloudflare";
+            log("Cloudflare sigue activo; la interfaz permanecerá oculta");
             return;
         }
+
+        mountInterface();
+        installWebSocketStub();
 
         try {
             updateStatus("Esperando el token de verificación del bot de Work.ink...");
             const monocle = await waitForMonocle();
-            updateStatus("Token de verificación del bot capturado. Inicializando la retransmisión...");
+            lastMonocle = monocle;
+            updateStatus("Token capturado. Inicializando los métodos disponibles...");
 
-            const initResponse = await gmFetch(`${EVADE_BASE}/api/evade/init`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ mcl: monocle, session_id: relaySession })
-            });
-
-            if (!initResponse.ok) {
-                showError(`Falló la inicialización de la retransmisión (${initResponse.status})`);
-                return;
-            }
-
-            initData = await initResponse.json();
-            const relayToken = initData?.tok || "";
-            const relayTokenInfo = inspectCustomerToken(relayToken);
+            const initializedProviders = await Promise.all(RELAY_PROVIDERS.map(async (provider) => {
+                try {
+                    const response = await gmFetch(`${provider.base}/api/evade/init`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ mcl: monocle, session_id: relaySession }),
+                        timeout: 10000
+                    });
+                    if (!response.ok) return null;
+                    const providerInitData = await response.json();
+                    const tokenInfo = inspectCustomerToken(providerInitData?.tok || "");
+                    if (!providerInitData?.tok || tokenInfo.expired) return null;
+                    return { ...provider, initData: providerInitData, tokenInfo };
+                } catch (providerError) {
+                    warn(`No se pudo inicializar ${provider.id}`, providerError);
+                    return null;
+                }
+            }));
+            relayProviders = initializedProviders.filter(Boolean);
+            activeRelay = relayProviders[0] || null;
+            initData = activeRelay?.initData || null;
             const storedToken = getStoredCustomerToken();
-            const selectedToken = storedToken || (relayToken && !relayTokenInfo.expired
-                ? { token: relayToken, source: "relay", info: relayTokenInfo }
-                : null);
+            const selectedToken = initData?.tok
+                ? { token: initData.tok, source: activeRelay.id, info: activeRelay.tokenInfo }
+                : storedToken;
+            debugState.providers = relayProviders.map((provider) => ({ id: provider.id, ready: true }));
+            debugState.activeProvider = activeRelay?.id || "work-direct";
             debugState.protocol.sessionToken = {
                 source: selectedToken?.source || null,
-                relay: relayTokenInfo,
-                stored: storedToken?.info || null
+                relay: activeRelay?.tokenInfo || null,
+                storedAvailable: Boolean(storedToken)
             };
 
             if (!selectedToken) {
-                clearCustomerToken(relayToken);
                 showLoginRequired();
                 return;
             }
 
-            initData.tok = selectedToken.token;
+            if (!initData) {
+                initData = { tok: selectedToken.token };
+                directMode = true;
+            } else {
+                initData.tok = selectedToken.token;
+            }
             persistCustomerToken(selectedToken.token);
-            log("Retransmisión inicializada", {
+            log("Métodos inicializados", {
                 hasToken: true,
                 tokenSource: selectedToken.source,
-                relayTokenExpired: relayTokenInfo.expired,
+                providers: relayProviders.map((provider) => provider.id),
                 hasMonoclePacket: Boolean(initData?.mcl),
                 hasPinger: Boolean(initData?.pinger)
             });
 
             updateStatus("Leyendo los parámetros del enlace...");
-            const html = await unsafeWindow.fetch(location.href).then((response) => response.text());
+            const html = await originalFetch(location.href).then((response) => response.text());
             const userIdMatch = html.match(/f_user_id\s*:\s*["']?(\d+)["']?/);
             if (!userIdMatch?.[1]) {
                 showError("No se pudo extraer el ID de usuario de Work.ink");
