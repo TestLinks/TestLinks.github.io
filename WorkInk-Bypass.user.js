@@ -2,7 +2,7 @@
 // @name         Bypass de work.ink
 // @namespace    http://tampermonkey.net/
 // @version      1.67
-// @description  Haz bypass a workInk usando un Bypass Tool. EASx Nigger lmao. Skipped on Top
+// @description  Omite enlaces de Work.ink mediante una retransmisión segura de Skipped & BanHammer
 // @author       TheRealBanHammer
 // @license      MIT
 // @match        https://work.ink/*
@@ -52,7 +52,7 @@
     const CUSTOM_OFFER_PROGRESS_TIMEOUT = 45000;
     const OFFER_GOAL_GRACE_TIMEOUT = 30000;
     const OFFER_STATE_SYNC_TIMEOUT = 5000;
-    const DESTINATION_TIMEOUT = 60000;
+    const DESTINATION_TIMEOUT = 180000;
     const PREMIUM_WALL_GRACE_MS = 1500;
 
     if (location.pathname.startsWith("/token/")) return;
@@ -1893,7 +1893,7 @@
         debugState.destinationWait.completedAt = Date.now();
         if (destination) redirect(destination);
         else if (!finished && latestOffersState?.completedOffers === 0 && latestOffersState?.neededOffers === 0) {
-            showError("Work.ink confirmó que no hay ofertas disponibles, pero no devolvió el destino después del temporizador requerido");
+            showError(`Work.ink no devolvió el destino después de ${DESTINATION_TIMEOUT / 1000} segundos. Recarga la página e inténtalo de nuevo`);
         } else if (!finished) {
             showError("Work.ink no envió el destino después de confirmar las ofertas");
         }
