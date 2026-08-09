@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Workink Bypass
 // @namespace    http://tampermonkey.net/
-// @version      2.0.1
+// @version      2.0.2
 // @description  Hazle bypass a los links de Workink usando métodos y APIs de herramientas populares como Bypass.Tools, Skipped, TRW & otros. Si eres dueño de una de estas herramientas, puedes hacerle skid a mi userscript, los únicos créditos que son míos son haber escrito este Userscript. Y si no eres dueño de ninguna de estas herramientas, puedes hacerle skid a mi userscript, me da igual. Si necesitas mi ayuda para programar algo, puedes contactarme - TheRealBanHammer
 // @author       TheRealBanHammer & otros
 // @license      FREE-TO-SKID
@@ -21,12 +21,11 @@
 // @supportURL   https://discord.gg/rTGF5xhe3h
 // ==/UserScript==
 
-
 (function() {
     "use strict";
 
     const DEBUG = true;
-    const BUILD = "2026-08-09-02";
+    const BUILD = "2026-08-09-03";
     const RELAY_PROVIDERS = Object.freeze([
         { id: "bypass-tools", base: "https://evade.bypass.tools" },
         { id: "skipped", base: "https://skipped.lol" }
@@ -61,6 +60,7 @@
     const OFFER_GOAL_GRACE_TIMEOUT = 5000;
     const DESTINATION_TIMEOUT = 12000;
     const DIRECT_DESTINATION_TIMEOUT = 35000;
+    const WORK_DIRECT_REQUEST_TIMEOUT = 5000;
 
     if (location.pathname.startsWith("/token/")) return;
 
@@ -1011,12 +1011,18 @@
         return { responses, messages };
     }
 
-    async function readSSEStream(response) {
-        if (!response.body?.getReader) return parseSSEText(await response.text());
+    async function readSSEStream(response, onResponse = null, result = { responses: [], messages: [] }) {
+        if (!response.body?.getReader) {
+            const parsed = parseSSEText(await response.text());
+            result.responses.push(...parsed.responses);
+            result.messages.push(...parsed.messages);
+            if (onResponse) {
+                for (const payload of parsed.responses) await onResponse(payload);
+            }
+            return result;
+        }
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        const responses = [];
-        const messages = [];
         let buffer = "";
         try {
             while (true) {
@@ -1029,17 +1035,19 @@
                     if (!line.startsWith("data: ")) continue;
                     try {
                         const event = JSON.parse(line.slice(6));
-                        if (event.type === "r") responses.push(event.pyl);
-                        else if (event.type === "m") messages.push(event.msg);
-                        else if (event.type === "error") messages.push(`ERROR: ${event.msg}`);
-                        else if (event.type === "done") return { responses, messages };
+                        if (event.type === "r") {
+                            result.responses.push(event.pyl);
+                            if (onResponse) await onResponse(event.pyl);
+                        } else if (event.type === "m") result.messages.push(event.msg);
+                        else if (event.type === "error") result.messages.push(`ERROR: ${event.msg}`);
+                        else if (event.type === "done") return result;
                     } catch {}
                 }
             }
         } finally {
             reader.releaseLock();
         }
-        return { responses, messages };
+        return result;
     }
 
     async function runOperaSpoof() {
@@ -1121,7 +1129,11 @@
             UVA: "V3.0.5",
             SST: true
         });
-        let result;
+        const result = { responses: [], messages: [] };
+        let nativeResponseStarted = false;
+        let processedLive = false;
+        const controller = new unsafeWindow.AbortController();
+        const requestTimer = setTimeout(() => controller.abort(), WORK_DIRECT_REQUEST_TIMEOUT);
         try {
             const response = await originalFetch(`${WORK_DIRECT_BASE}/api/clientSides/workink`, {
                 method: "POST",
@@ -1129,28 +1141,49 @@
                     Accept: "text/event-stream",
                     "Content-Type": "application/json"
                 },
-                body
+                body,
+                signal: controller.signal
             });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            result = await readSSEStream(response);
+            nativeResponseStarted = true;
+            processedLive = true;
+            await readSSEStream(response, processDirectCommand, result);
         } catch (streamError) {
-            const response = await gmFetch(`${WORK_DIRECT_BASE}/api/clientSides/workink`, {
-                method: "POST",
-                headers: {
-                    Accept: "text/event-stream",
-                    "Content-Type": "application/json"
-                },
-                body,
-                timeout: DIRECT_DESTINATION_TIMEOUT
-            });
-            result = parseSSEText(await response.text());
+            if (!nativeResponseStarted) {
+                try {
+                    const response = await gmFetch(`${WORK_DIRECT_BASE}/api/clientSides/workink`, {
+                        method: "POST",
+                        headers: {
+                            Accept: "text/event-stream",
+                            "Content-Type": "application/json"
+                        },
+                        body,
+                        timeout: WORK_DIRECT_REQUEST_TIMEOUT
+                    });
+                    const parsed = parseSSEText(await response.text());
+                    result.responses.push(...parsed.responses);
+                    result.messages.push(...parsed.messages);
+                } catch (fallbackError) {
+                    warn("La solicitud directa no respondió a tiempo", fallbackError);
+                }
+            } else if (!controller.signal.aborted) {
+                warn("El flujo SSE directo se interrumpió", streamError);
+            }
+        } finally {
+            clearTimeout(requestTimer);
         }
         for (const message of result.messages) {
             if (typeof message !== "string" || !message.trim()) continue;
             if (message.startsWith("ERROR:")) warn("El método directo informó un error", message.slice(6).trim());
             else log("Mensaje del método directo", message.trim());
         }
-        for (const response of result.responses) await processDirectCommand(response);
+        if (!processedLive) {
+            for (const response of result.responses) await processDirectCommand(response);
+        }
+        if (encodePayload && result.responses.length === 0 && !finished) {
+            log("El método directo no devolvió reemplazo; se reenviará el paquete original");
+            sendRaw(payload);
+        }
         return result;
     }
 
