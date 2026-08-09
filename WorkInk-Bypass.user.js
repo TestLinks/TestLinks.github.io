@@ -160,29 +160,568 @@
 
     log("Compilación cargada", BUILD);
 
+    const previousOverflow = document.documentElement.style.overflow;
     const container = document.createElement("div");
-    container.style.position = "fixed";
-    container.style.bottom = "10px";
-    container.style.left = "10px";
-    container.style.zIndex = "2147483647";
+    container.id = "trbh-workink-interface";
+    Object.assign(container.style, {
+        position: "fixed",
+        inset: "0",
+        zIndex: "2147483647"
+    });
 
     const shadow = container.attachShadow({ mode: "open" });
-    const hint = document.createElement("div");
-    Object.assign(hint.style, {
-        background: "rgba(0,0,0,0.88)",
-        color: "#fff",
-        padding: "8px 12px",
-        borderRadius: "6px",
-        fontSize: "14px",
-        fontFamily: "sans-serif",
-        pointerEvents: "none"
-    });
-    hint.textContent = "Conectando con la retransmisión de BypassTools...";
-    shadow.appendChild(hint);
-    document.documentElement.appendChild(container);
+    const style = document.createElement("style");
+    style.textContent = `
+        :host {
+            all: initial;
+        }
 
-    function updateStatus(message) {
-        hint.textContent = message;
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        .overlay {
+            --background: #000000;
+            --surface: rgba(18, 18, 20, 0.72);
+            --accent: #ef4444;
+            --accent-strong: #dc2626;
+            --border: rgba(255, 255, 255, 0.14);
+            --text: #fffafa;
+            --muted: #b6b3b5;
+            position: fixed;
+            inset: 0;
+            isolation: isolate;
+            display: grid;
+            place-items: center;
+            width: 100vw;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+            overflow: auto;
+            background:
+                radial-gradient(circle at 84% 12%, rgba(239, 68, 68, 0.16), transparent 30%),
+                radial-gradient(circle at 12% 88%, rgba(127, 29, 29, 0.2), transparent 34%),
+                linear-gradient(145deg, #050505, var(--background) 56%);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable", "Segoe UI", sans-serif;
+        }
+
+        .overlay::before,
+        .overlay::after {
+            content: "";
+            position: fixed;
+            z-index: -1;
+            width: 360px;
+            height: 360px;
+            border-radius: 50%;
+            background: rgba(239, 68, 68, 0.16);
+            filter: blur(90px);
+            opacity: 0.9;
+        }
+
+        .overlay::before {
+            top: -170px;
+            right: -90px;
+        }
+
+        .overlay::after {
+            left: -130px;
+            bottom: -200px;
+            width: 440px;
+            height: 440px;
+            background: rgba(127, 29, 29, 0.2);
+        }
+
+        .card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: min(520px, calc(100vw - 40px));
+            min-height: 420px;
+            padding: 34px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 32px;
+            background:
+                radial-gradient(circle at 82% 0%, rgba(255, 255, 255, 0.12), transparent 34%),
+                linear-gradient(145deg, rgba(38, 36, 38, 0.76), rgba(12, 12, 14, 0.62));
+            -webkit-backdrop-filter: blur(30px) saturate(165%);
+            backdrop-filter: blur(30px) saturate(165%);
+            box-shadow:
+                0 32px 100px rgba(0, 0, 0, 0.62),
+                inset 0 1px 0 rgba(255, 255, 255, 0.19),
+                inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+            text-align: center;
+            animation: enter 0.68s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            inset: 1px;
+            border-radius: 31px;
+            background:
+                linear-gradient(115deg, rgba(255, 255, 255, 0.12), transparent 28%),
+                radial-gradient(circle at 18% 10%, rgba(239, 68, 68, 0.12), transparent 38%);
+            pointer-events: none;
+        }
+
+        .card::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 14%;
+            width: 72%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+            opacity: 0.54;
+            pointer-events: none;
+        }
+
+        .card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            margin-bottom: 34px;
+        }
+
+        .mark {
+            display: grid;
+            flex: 0 0 auto;
+            place-items: center;
+            width: 42px;
+            height: 42px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 14px;
+            background:
+                linear-gradient(145deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.035)),
+                rgba(239, 68, 68, 0.08);
+            -webkit-backdrop-filter: blur(14px) saturate(150%);
+            backdrop-filter: blur(14px) saturate(150%);
+            box-shadow:
+                0 10px 28px rgba(0, 0, 0, 0.28),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .mark img {
+            display: block;
+            width: 28px;
+            height: 28px;
+            filter: drop-shadow(0 8px 16px rgba(239, 68, 68, 0.22));
+        }
+
+        .wordmark {
+            display: inline-flex;
+            align-items: baseline;
+            font-size: 1.25rem;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -0.045em;
+            white-space: nowrap;
+        }
+
+        .wordmark span:first-child {
+            color: var(--accent);
+        }
+
+        .wordmark span:last-child {
+            color: var(--text);
+        }
+
+        .title {
+            margin: 0 0 14px;
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable", "Segoe UI", sans-serif;
+            font-size: clamp(2rem, 3.5vw, 3rem);
+            font-weight: 800;
+            line-height: 1.05;
+            letter-spacing: -0.035em;
+        }
+
+        .subtitle {
+            margin: 0 0 1.8rem;
+            color: var(--muted);
+            font-size: 1rem;
+            line-height: 1.65;
+        }
+
+        .status {
+            width: 100%;
+            margin: 20px 0 0;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 20px;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.022));
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                0 12px 28px rgba(0, 0, 0, 0.18);
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 10px;
+            overflow: hidden;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.055);
+            background: rgba(0, 0, 0, 0.42);
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.56);
+        }
+
+        .progress-bar {
+            width: 5%;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, var(--accent), #dc2626);
+            box-shadow: 0 0 22px rgba(239, 68, 68, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            transition: width 0.3s ease, background 0.2s ease;
+        }
+
+        .status-detail {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            min-height: 44px;
+            padding: 15px 2px 0;
+            color: #e4e4e7;
+            font-size: 0.9rem;
+            font-weight: 650;
+            line-height: 1.35;
+            text-align: left;
+        }
+
+        .status-main {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .spinner {
+            flex: 0 0 auto;
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .runtime {
+            flex: 0 0 auto;
+            color: #ffb4ae;
+            font-weight: 850;
+            white-space: nowrap;
+        }
+
+        .captcha-host:not(:empty) {
+            display: grid;
+            place-items: center;
+            width: 100%;
+            margin-top: 18px;
+            padding: 18px;
+            overflow-x: auto;
+            border: 1px solid rgba(255, 255, 255, 0.11);
+            border-radius: 22px;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.025));
+            -webkit-backdrop-filter: blur(18px) saturate(145%);
+            backdrop-filter: blur(18px) saturate(145%);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 14px 34px rgba(0, 0, 0, 0.22);
+            animation: captcha-in 0.32s ease-out;
+        }
+
+        .captcha-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
+            color: var(--text);
+        }
+
+        .captcha-label {
+            color: #f4f4f5;
+            font-size: 0.875rem;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+
+        .captcha-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 300px;
+            min-height: 65px;
+        }
+
+        .footer {
+            margin-top: auto;
+            padding-top: 26px;
+            color: #6f6b6e;
+            font-size: 0.78rem;
+        }
+
+        .footer a {
+            color: #8d888b;
+            text-decoration: none;
+        }
+
+        .footer a:hover,
+        .footer a:focus-visible {
+            color: var(--accent);
+            outline: none;
+        }
+
+        .card[data-state="error"] .progress-bar {
+            background: #ef4444;
+            box-shadow: 0 0 24px rgba(239, 68, 68, 0.42);
+        }
+
+        .card[data-state="error"] .spinner {
+            border-color: rgba(239, 68, 68, 0.28);
+            border-top-color: #ef4444;
+            animation: none;
+        }
+
+        .card[data-state="error"] .status-detail,
+        .card[data-state="error"] .runtime {
+            color: #fda4af;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes enter {
+            0% { opacity: 0; transform: translateY(28px) scale(0.96); filter: blur(10px); }
+            60% { opacity: 1; transform: translateY(-2px) scale(1.01); filter: blur(0); }
+            100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+
+        @keyframes captcha-in {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 640px) {
+            .overlay {
+                padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+            }
+
+            .card {
+                width: calc(100vw - 16px);
+                min-height: auto;
+                padding: 22px 16px;
+                border-radius: 28px;
+                -webkit-backdrop-filter: blur(22px) saturate(150%);
+                backdrop-filter: blur(22px) saturate(150%);
+            }
+
+            .card::before {
+                border-radius: 27px;
+            }
+
+            .brand {
+                margin-bottom: 26px;
+            }
+
+            .title {
+                font-size: 2rem;
+            }
+
+            .status-detail {
+                align-items: flex-start;
+                font-size: 0.84rem;
+            }
+
+            .status {
+                padding: 14px;
+                border-radius: 18px;
+            }
+
+            .captcha-host:not(:empty) {
+                padding: 14px 4px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .card,
+            .spinner,
+            .captcha-host:not(:empty) {
+                animation: none;
+            }
+
+            .progress-bar {
+                transition: none;
+            }
+        }
+
+        @media (prefers-reduced-transparency: reduce) {
+            .card,
+            .mark,
+            .captcha-host:not(:empty) {
+                background: #171719;
+                -webkit-backdrop-filter: none;
+                backdrop-filter: none;
+            }
+        }
+
+        @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+            .card {
+                background: #171719;
+            }
+
+            .mark,
+            .captcha-host:not(:empty) {
+                background: #202023;
+            }
+        }
+    `;
+
+    const overlay = document.createElement("div");
+    overlay.className = "overlay";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "trbh-interface-title");
+    overlay.setAttribute("aria-describedby", "trbh-interface-subtitle");
+
+    const card = document.createElement("section");
+    card.className = "card";
+    card.dataset.state = "working";
+
+    const brand = document.createElement("div");
+    brand.className = "brand";
+    const mark = document.createElement("div");
+    mark.className = "mark";
+    const logo = document.createElement("img");
+    logo.src = "https://bypass.tools/favicon-96x96.png";
+    logo.alt = "";
+    logo.setAttribute("aria-hidden", "true");
+    const wordmark = document.createElement("div");
+    wordmark.className = "wordmark";
+    const wordmarkFirst = document.createElement("span");
+    wordmarkFirst.textContent = "Bypass";
+    const wordmarkLast = document.createElement("span");
+    wordmarkLast.textContent = "Tools";
+    mark.appendChild(logo);
+    wordmark.append(wordmarkFirst, wordmarkLast);
+    brand.append(mark, wordmark);
+
+    const title = document.createElement("h1");
+    title.id = "trbh-interface-title";
+    title.className = "title";
+    title.textContent = "Bypass de Work.ink";
+
+    const subtitle = document.createElement("p");
+    subtitle.id = "trbh-interface-subtitle";
+    subtitle.className = "subtitle";
+    subtitle.textContent = "Procesando el enlace de forma segura.";
+
+    const status = document.createElement("div");
+    status.className = "status";
+    status.setAttribute("aria-live", "polite");
+    status.setAttribute("aria-atomic", "true");
+    const progressTrack = document.createElement("div");
+    progressTrack.className = "progress-track";
+    progressTrack.setAttribute("role", "progressbar");
+    progressTrack.setAttribute("aria-valuemin", "0");
+    progressTrack.setAttribute("aria-valuemax", "100");
+    progressTrack.setAttribute("aria-valuenow", "5");
+    const progressBar = document.createElement("div");
+    progressBar.className = "progress-bar";
+    progressTrack.appendChild(progressBar);
+    const statusDetail = document.createElement("div");
+    statusDetail.className = "status-detail";
+    const statusMain = document.createElement("span");
+    statusMain.className = "status-main";
+    const spinner = document.createElement("span");
+    spinner.className = "spinner";
+    spinner.setAttribute("aria-hidden", "true");
+    const statusText = document.createElement("span");
+    statusText.textContent = "Conectando con la retransmisión de BypassTools...";
+    const runtimeText = document.createElement("span");
+    runtimeText.className = "runtime";
+    runtimeText.textContent = "Transcurrido 0s";
+    statusMain.append(spinner, statusText);
+    statusDetail.append(statusMain, runtimeText);
+    status.append(progressTrack, statusDetail);
+
+    const captchaHost = document.createElement("div");
+    captchaHost.className = "captcha-host";
+
+    const footer = document.createElement("div");
+    footer.className = "footer";
+    const footerLink = document.createElement("a");
+    footerLink.href = "https://bypass.tools";
+    footerLink.target = "_blank";
+    footerLink.rel = "noopener noreferrer";
+    footerLink.textContent = "BypassTools";
+    footer.append("Impulsado por ", footerLink, ` · ${BUILD}`);
+
+    card.append(brand, title, subtitle, status, captchaHost, footer);
+    overlay.appendChild(card);
+    shadow.append(style, overlay);
+    document.documentElement.appendChild(container);
+    document.documentElement.style.overflow = "hidden";
+
+    let statusProgress = 5;
+    let interfaceDismissed = false;
+    let loginPromptShown = false;
+    const runtimeTimer = setInterval(() => {
+        if (interfaceDismissed || card.dataset.state === "error") return;
+        runtimeText.textContent = `Transcurrido ${Math.floor((Date.now() - startTime) / 1000)}s`;
+    }, 1000);
+
+    function dismissInterface() {
+        if (interfaceDismissed) return;
+        interfaceDismissed = true;
+        clearInterval(runtimeTimer);
+        container.remove();
+        document.documentElement.style.overflow = previousOverflow;
+    }
+
+    function isLoginError(message) {
+        const normalized = String(message || "").toLowerCase();
+        return normalized.includes("customer session token") ||
+            normalized.includes("session token") ||
+            normalized.includes("not logged in") ||
+            normalized.includes("not signed in") ||
+            normalized.includes("inicia sesión");
+    }
+
+    function showLoginRequired() {
+        if (loginPromptShown) return;
+        loginPromptShown = true;
+        finished = true;
+        if (linkInfoTimer) clearTimeout(linkInfoTimer);
+        if (pingTimer) clearTimeout(pingTimer);
+        try { realWebSocket?.close(); } catch {}
+        unsafeWindow.WebSocket = originalWebSocket;
+        dismissInterface();
+        setTimeout(() => {
+            unsafeWindow.alert("Debes iniciar sesión en Work.ink para continuar. Inicia sesión y vuelve a cargar esta página.");
+        }, 25);
+    }
+
+    function updateStatus(message, progress = null) {
+        if (!interfaceDismissed) {
+            statusProgress = progress === null
+                ? Math.min(92, statusProgress + (statusProgress < 30 ? 4 : 2))
+                : Math.max(5, Math.min(100, progress));
+            card.dataset.state = "working";
+            statusText.textContent = message;
+            progressBar.style.width = `${statusProgress}%`;
+            progressTrack.setAttribute("aria-valuenow", String(statusProgress));
+        }
         debugState.phase = message;
         debugState.status.push({ time: Date.now(), message });
         if (debugState.status.length > 100) debugState.status.shift();
@@ -190,8 +729,11 @@
     }
 
     function showError(message) {
-        hint.style.background = "rgba(127,29,29,0.94)";
-        updateStatus(`Error: ${message}`);
+        updateStatus(`Error: ${message}`, 100);
+        if (!interfaceDismissed) {
+            card.dataset.state = "error";
+            runtimeText.textContent = "Error";
+        }
     }
 
     function redirect(destination) {
@@ -204,12 +746,12 @@
 
         const tick = () => {
             if (remaining <= 0) {
-                updateStatus("Redirigiendo al destino...");
+                updateStatus("Redirigiendo al destino...", 100);
                 unsafeWindow.location.href = destination;
                 return;
             }
 
-            updateStatus(`Bypass completado. Redirigiendo en ${remaining}s...`);
+            updateStatus(`Bypass completado. Redirigiendo en ${remaining}s...`, 100);
             remaining -= 1;
             setTimeout(tick, 1000);
         };
@@ -300,44 +842,23 @@
     }
 
     function createCaptchaPanel(id, title) {
-        document.getElementById(`${id}-panel`)?.remove();
+        shadow.getElementById(`${id}-panel`)?.remove();
 
         const panel = document.createElement("div");
         panel.id = `${id}-panel`;
-        panel.style.cssText = [
-            "position:fixed",
-            "left:50%",
-            "top:50%",
-            "transform:translate(-50%,-50%)",
-            "z-index:2147483647",
-            "display:flex",
-            "flex-direction:column",
-            "align-items:center",
-            "gap:14px",
-            "width:min(360px,calc(100vw - 32px))",
-            "padding:18px",
-            "box-sizing:border-box",
-            "border-radius:12px",
-            "background:rgba(12,12,14,0.96)",
-            "border:1px solid rgba(255,255,255,0.14)",
-            "box-shadow:0 20px 70px rgba(0,0,0,0.55)",
-            "color:#fff",
-            "font-family:Segoe UI,sans-serif",
-            "text-align:center",
-            "pointer-events:auto"
-        ].join(";");
+        panel.className = "captcha-panel";
 
         const label = document.createElement("div");
+        label.className = "captcha-label";
         label.textContent = title;
-        label.style.cssText = "font-size:14px;font-weight:700;line-height:1.35;color:#f4f4f5";
 
         const captchaContainer = document.createElement("div");
         captchaContainer.id = id;
-        captchaContainer.style.cssText = "display:flex;align-items:center;justify-content:center;min-width:300px;min-height:65px";
+        captchaContainer.className = "captcha-container";
 
         panel.append(label, captchaContainer);
-        (document.body || document.documentElement).appendChild(panel);
-        return panel;
+        captchaHost.replaceChildren(panel);
+        return { panel, captchaContainer };
     }
 
     function loadExternalScript(id, source) {
@@ -363,7 +884,7 @@
             );
 
             const captchaId = `workink-relay-turnstile-${++turnstileSolveSequence}`;
-            const panel = createCaptchaPanel(
+            const { panel, captchaContainer } = createCaptchaPanel(
                 captchaId,
                 title
             );
@@ -395,7 +916,7 @@
                         }
                     };
                     if (action) options.action = action;
-                    turnstile.render(`#${captchaId}`, options);
+                    turnstile.render(captchaContainer, options);
                 } catch (turnstileError) {
                     panel.remove();
                     reject(turnstileError);
@@ -415,7 +936,7 @@
             );
 
             const captchaId = `workink-relay-hcaptcha-${++hcaptchaSolveSequence}`;
-            const panel = createCaptchaPanel(captchaId, title);
+            const { panel, captchaContainer } = createCaptchaPanel(captchaId, title);
             updateStatus(status);
 
             const started = Date.now();
@@ -431,7 +952,7 @@
 
                 clearInterval(timer);
                 try {
-                    hcaptcha.render(captchaId, {
+                    hcaptcha.render(captchaContainer, {
                         sitekey: HCAPTCHA_SITE_KEY,
                         theme: "dark",
                         callback(token) {
@@ -726,7 +1247,7 @@
 
         if (packet.type === SERVER_PACKET.ERROR) {
             const message = String(payload?.message || "Work.ink rechazó la conexión WebSocket");
-            const invalidToken = /customer session token/i.test(message);
+            const invalidToken = isLoginError(message);
             const displayMessage = invalidToken
                 ? "El token de sesión de Work.ink no es válido. Crea una cuenta o inicia sesión en Work.ink y vuelve a cargar esta página."
                 : message;
@@ -737,6 +1258,10 @@
                 linkInfoTimer = null;
             }
             finished = true;
+            if (invalidToken) {
+                showLoginRequired();
+                return;
+            }
             showError(displayMessage);
             try { realWebSocket?.close(); } catch {}
             return;
@@ -1294,8 +1819,13 @@
         });
 
         if (response.success === false && response.error) {
-            finished = true;
-            showError(response.error);
+            const responseError = String(response.error);
+            if (isLoginError(responseError)) {
+                showLoginRequired();
+            } else {
+                finished = true;
+                showError(responseError);
+            }
             return;
         }
 
@@ -1578,10 +2108,7 @@
 
             if (!selectedToken) {
                 clearCustomerToken(relayToken);
-                unsafeWindow.WebSocket = originalWebSocket;
-                showError(relayTokenInfo.expired
-                    ? "El token de sesión de Work.ink no es válido. Crea una cuenta o inicia sesión en Work.ink y vuelve a cargar esta página."
-                    : "No hay ningún token de sesión de Work.ink disponible. Crea una cuenta o inicia sesión en Work.ink y vuelve a cargar esta página.");
+                showLoginRequired();
                 return;
             }
 
