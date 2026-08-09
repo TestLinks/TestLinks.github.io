@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Workink Bypass
 // @namespace    http://tampermonkey.net/
-// @version      2.0.2
+// @version      2.1.1
 // @description  Hazle bypass a los links de Workink usando métodos y APIs de herramientas populares como Bypass.Tools, Skipped, TRW & otros. Si eres dueño de una de estas herramientas, puedes hacerle skid a mi userscript, los únicos créditos que son míos son haber escrito este Userscript. Y si no eres dueño de ninguna de estas herramientas, puedes hacerle skid a mi userscript, me da igual. Si necesitas mi ayuda para programar algo, puedes contactarme - TheRealBanHammer
 // @author       TheRealBanHammer & otros
 // @license      FREE-TO-SKID
@@ -25,12 +25,19 @@
     "use strict";
 
     const DEBUG = true;
-    const BUILD = "2026-08-09-03";
+    const BUILD = "2026-08-09-05";
     const RELAY_PROVIDERS = Object.freeze([
         { id: "bypass-tools", base: "https://evade.bypass.tools" },
         { id: "skipped", base: "https://skipped.lol" }
     ]);
     const WORK_DIRECT_BASE = "https://work-direct.ink";
+    const METHOD_ORDER = Object.freeze(["bypass-tools", "skipped", "work-direct"]);
+    const METHOD_LABELS = Object.freeze({
+        "bypass-tools": "BypassTools",
+        skipped: "Skipped",
+        "work-direct": "WorkDirect"
+    });
+    const METHOD_STATE_TTL = 180000;
     const TURNSTILE_SITE_KEY = "0x4AAAAAAAJoXhmMXwq7jgK9";
     const HCAPTCHA_SITE_KEY = "74184788-498a-4910-ba14-be9c2acc3f98";
     const WORKINK_OUTER_KEY = "FOyWLycLacw35PbZpwK8Q3N6ouw6PBQ2snZHMIDmXrUXoCUXv7XgOiVlrl9NMn2p";
@@ -61,6 +68,10 @@
     const DESTINATION_TIMEOUT = 12000;
     const DIRECT_DESTINATION_TIMEOUT = 35000;
     const WORK_DIRECT_REQUEST_TIMEOUT = 5000;
+
+    const methodStateKey = `trbh-workink-method:${location.pathname}`;
+    const methodAttemptIndex = readMethodAttemptIndex();
+    const selectedMethod = METHOD_ORDER[methodAttemptIndex] || METHOD_ORDER[0];
 
     if (location.pathname.startsWith("/token/")) return;
 
@@ -110,6 +121,7 @@
     let sessionTokenIndex = -1;
     let sessionRetryInProgress = false;
     let connectionParameters = null;
+    let methodTransitionScheduled = false;
     let turnstileSolveSequence = 0;
     let hcaptchaSolveSequence = 0;
     const pageSessionTokenPromise = new Promise((resolve) => {
@@ -143,6 +155,30 @@
         activeProvider: null,
         directFallback: null
     };
+    debugState.method = {
+        current: selectedMethod,
+        attempt: methodAttemptIndex + 1,
+        total: METHOD_ORDER.length
+    };
+
+    function readMethodAttemptIndex() {
+        try {
+            const state = JSON.parse(unsafeWindow.sessionStorage?.getItem(methodStateKey) || "null");
+            if (!state || state.path !== location.pathname) return 0;
+            if (Date.now() - Number(state.updatedAt || 0) > METHOD_STATE_TTL) {
+                unsafeWindow.sessionStorage.removeItem(methodStateKey);
+                return 0;
+            }
+            const index = Number(state.index);
+            return Number.isInteger(index) && index >= 0 && index < METHOD_ORDER.length ? index : 0;
+        } catch {
+            return 0;
+        }
+    }
+
+    function clearMethodAttempt() {
+        try { unsafeWindow.sessionStorage?.removeItem(methodStateKey); } catch {}
+    }
 
     function packetShape(payload) {
         if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
@@ -889,8 +925,38 @@
         }
     }
 
+    function advanceMethod(reason) {
+        if (methodTransitionScheduled || redirectScheduled || finished) return methodTransitionScheduled;
+        const nextIndex = methodAttemptIndex + 1;
+        if (nextIndex >= METHOD_ORDER.length) return false;
+        methodTransitionScheduled = true;
+        const nextMethod = METHOD_ORDER[nextIndex];
+        try {
+            unsafeWindow.sessionStorage?.setItem(methodStateKey, JSON.stringify({
+                index: nextIndex,
+                path: location.pathname,
+                updatedAt: Date.now()
+            }));
+        } catch {}
+        if (linkInfoTimer) clearTimeout(linkInfoTimer);
+        if (pingTimer) clearTimeout(pingTimer);
+        try { realWebSocket?.close(); } catch {}
+        debugState.method.transition = { reason, next: nextMethod, time: Date.now() };
+        updateStatus(`${METHOD_LABELS[selectedMethod]} no obtuvo el destino. Probando ${METHOD_LABELS[nextMethod]}...`, 88);
+        setTimeout(() => unsafeWindow.location.reload(), 220);
+        return true;
+    }
+
+    function failCurrentMethod(message) {
+        if (advanceMethod(message)) return;
+        clearMethodAttempt();
+        finished = true;
+        showError(message);
+    }
+
     function redirect(destination) {
         if (!destination || redirectScheduled) return;
+        clearMethodAttempt();
         finished = true;
         redirectScheduled = true;
         directDestinationResolve?.(destination);
@@ -937,22 +1003,6 @@
         });
     }
 
-    function relayResponseScore(response) {
-        if (!response || typeof response !== "object") return -1;
-        if (response.conditions === "destination" && response.destinationURL) return 100;
-        if (response.success === false && response.error) return 55;
-        if (
-            response.sM?.length ||
-            response.raM?.length ||
-            response.mM?.length ||
-            response.coM?.length ||
-            Object.prototype.hasOwnProperty.call(response, "sM")
-        ) return 80;
-        if (response.tst || response.hcresp) return 70;
-        if (response.em || response.pingMsg || response.conditions) return 60;
-        return 10;
-    }
-
     async function requestRelay(provider, payload, timeout = 15000) {
         const response = await gmFetch(`${provider.base}/api/evade/negotiate`, {
             method: "POST",
@@ -965,31 +1015,17 @@
     }
 
     async function negotiateWithRelays(payload, timeout = 15000) {
-        if (relayProviders.length === 0) return null;
-        const ordered = activeRelay
-            ? [activeRelay, ...relayProviders.filter((provider) => provider.id !== activeRelay.id)]
-            : [...relayProviders];
-        const results = await Promise.all(ordered.map(async (provider) => {
-            try {
-                return { provider, response: await requestRelay(provider, payload, timeout) };
-            } catch (relayError) {
-                warn(`Falló el relay ${provider.id}`, relayError);
-                return { provider, response: null };
-            }
-        }));
-        const selected = results
-            .filter((result) => result.response)
-            .sort((left, right) => {
-                const difference = relayResponseScore(right.response) - relayResponseScore(left.response);
-                if (difference !== 0) return difference;
-                if (activeRelay && left.provider.id === activeRelay.id) return -1;
-                if (activeRelay && right.provider.id === activeRelay.id) return 1;
-                return ordered.indexOf(left.provider) - ordered.indexOf(right.provider);
-            })[0] || null;
-        if (!selected) return null;
-        activeRelay = selected.provider;
-        debugState.activeProvider = activeRelay.id;
-        return selected.response;
+        const provider = activeRelay || relayProviders[0];
+        if (!provider) return null;
+        try {
+            const response = await requestRelay(provider, payload, timeout);
+            activeRelay = provider;
+            debugState.activeProvider = provider.id;
+            return response;
+        } catch (relayError) {
+            warn(`Falló el relay ${provider.id}`, relayError);
+            return null;
+        }
     }
 
     function sleep(milliseconds) {
@@ -1232,15 +1268,28 @@
     }
 
     function isCloudflareChallengeActive() {
-        const pageText = document.documentElement?.innerHTML?.toLowerCase() || "";
-        const pageTitle = document.title.toLowerCase();
-        return pageText.includes("/cdn-cgi/challenge-platform/") ||
-            pageText.includes("cf-browser-verification") ||
-            pageText.includes("window._cf_chl_opt") ||
-            pageTitle.includes("just a moment") ||
-            Boolean(document.querySelector(
-                "#challenge-running, #challenge-stage, form#challenge-form, iframe[src*='challenges.cloudflare.com']"
-            ));
+        const pageTitle = document.title.trim().toLowerCase();
+        const challengeTitles = [
+            "just a moment",
+            "un momento",
+            "attention required",
+            "atención requerida",
+            "security verification",
+            "verificación de seguridad"
+        ];
+        if (challengeTitles.some((title) => pageTitle.includes(title))) return true;
+        if (location.pathname.startsWith("/cdn-cgi/challenge-platform/")) return true;
+        return [...document.querySelectorAll(
+            "form#challenge-form[action*='/cdn-cgi/'], #challenge-running, #challenge-stage"
+        )].some((element) => {
+            const elementStyle = unsafeWindow.getComputedStyle(element);
+            const bounds = element.getBoundingClientRect();
+            return !element.hidden &&
+                elementStyle.display !== "none" &&
+                elementStyle.visibility !== "hidden" &&
+                bounds.width > 0 &&
+                bounds.height > 0;
+        });
     }
 
     async function waitForCloudflarePreflight() {
@@ -1732,6 +1781,7 @@
                 linkInfoTimer = null;
             }
             if (invalidToken && retryWithNextSessionToken()) return;
+            if (invalidToken && advanceMethod(displayMessage)) return;
             finished = true;
             showError(displayMessage);
             try { realWebSocket?.close(); } catch {}
@@ -2060,9 +2110,7 @@
             return;
         }
         if (finished) return;
-        const directDestination = await startDirectFallback(lastMonocle);
-        if (directDestination) redirect(directDestination);
-        else if (!finished) showError("Ninguno de los métodos disponibles pudo obtener el destino");
+        failCurrentMethod(`${METHOD_LABELS[selectedMethod]} no devolvió el destino`);
     }
 
     function handleRelayResponse(response) {
@@ -2086,12 +2134,10 @@
             const responseError = String(response.error);
             if (isLoginError(responseError)) {
                 if (!retryWithNextSessionToken()) {
-                    finished = true;
-                    showError("Work.ink rechazó todos los tokens disponibles. Tu cuenta puede seguir conectada, pero el token interno no es válido.");
+                    failCurrentMethod("Work.ink rechazó todos los tokens disponibles. Tu cuenta puede seguir conectada, pero el token interno no es válido.");
                 }
             } else {
-                finished = true;
-                showError(responseError);
+                failCurrentMethod(responseError);
             }
             return;
         }
@@ -2182,8 +2228,7 @@
                 sendRaw(turnstileResponse.tst);
             } catch (turnstileError) {
                 error("Falló el envío de Turnstile", turnstileError);
-                const directDestination = await startDirectFallback(lastMonocle);
-                if (!directDestination && !finished) showError("No se pudo verificar Turnstile con ningún método");
+                failCurrentMethod(`${METHOD_LABELS[selectedMethod]} no pudo verificar Turnstile`);
                 return;
             }
 
@@ -2199,8 +2244,7 @@
                         sendRaw(hcaptchaPacket);
                     } catch (hcaptchaError) {
                         error("Falló el envío de hCaptcha", hcaptchaError);
-                        const directDestination = await startDirectFallback(lastMonocle);
-                        if (!directDestination && !finished) showError("No se pudo verificar hCaptcha con ningún método");
+                        failCurrentMethod(`${METHOD_LABELS[selectedMethod]} no pudo verificar hCaptcha`);
                         return;
                     }
                 }
@@ -2259,10 +2303,11 @@
                     keys: relayResponse ? Object.keys(relayResponse) : []
                 });
                 if (relayResponse) handleRelayResponse(relayResponse);
-                else if (!executionStarted) startDirectFallback(lastMonocle);
+                else if (!executionStarted) failCurrentMethod(`${METHOD_LABELS[selectedMethod]} dejó de responder`);
             })
             .catch((relayError) => {
                 error(`Falló la negociación de la retransmisión para el mensaje #${sequence}`, relayError);
+                if (!executionStarted) failCurrentMethod(`${METHOD_LABELS[selectedMethod]} falló durante la negociación`);
             });
     }
 
@@ -2283,13 +2328,21 @@
         const socket = new originalWebSocket(webSocketUrl);
         realWebSocket = socket;
         linkInfoTimer = setTimeout(() => {
-            if (socket === realWebSocket && !finished && !executionStarted) startDirectFallback(monocle);
+            if (
+                socket === realWebSocket &&
+                selectedMethod !== "work-direct" &&
+                !finished &&
+                !executionStarted
+            ) failCurrentMethod(`${METHOD_LABELS[selectedMethod]} no recibió la información del enlace`);
         }, DESTINATION_TIMEOUT);
 
         socket.onopen = () => {
             if (socket !== realWebSocket) return;
             if (directMode) {
-                startDirectFallback(monocle);
+                startDirectFallback(monocle).then((destination) => {
+                    if (destination) redirect(destination);
+                    else if (!finished) failCurrentMethod("Ninguno de los métodos disponibles pudo obtener el destino");
+                });
             } else {
                 if (initData?.mcl) sendRaw(initData.mcl);
                 if (initData?.pinger) sendRaw(initData.pinger);
@@ -2361,9 +2414,12 @@
             updateStatus("Esperando el token de verificación del bot de Work.ink...");
             const monocle = await waitForMonocle();
             lastMonocle = monocle;
-            updateStatus("Token capturado. Inicializando los métodos disponibles...");
+            updateStatus(`Token capturado. Iniciando ${METHOD_LABELS[selectedMethod]} (${methodAttemptIndex + 1}/${METHOD_ORDER.length})...`);
 
-            const initializedProviders = await Promise.all(RELAY_PROVIDERS.map(async (provider) => {
+            const providersForAttempt = selectedMethod === "work-direct"
+                ? []
+                : RELAY_PROVIDERS.filter((provider) => provider.id === selectedMethod);
+            const initializedProviders = await Promise.all(providersForAttempt.map(async (provider) => {
                 try {
                     const response = await gmFetch(`${provider.base}/api/evade/init`, {
                         method: "POST",
@@ -2384,6 +2440,10 @@
             relayProviders = initializedProviders.filter(Boolean);
             activeRelay = relayProviders[0] || null;
             initData = activeRelay?.initData || null;
+            if (selectedMethod !== "work-direct" && !activeRelay) {
+                failCurrentMethod(`${METHOD_LABELS[selectedMethod]} no pudo inicializarse`);
+                return;
+            }
             const capturedToken = pageSessionToken
                 ? { token: pageSessionToken, source: "websocket de Work.ink", info: inspectCustomerToken(pageSessionToken) }
                 : await Promise.race([
@@ -2402,7 +2462,7 @@
                 });
             }
             debugState.providers = relayProviders.map((provider) => ({ id: provider.id, ready: true }));
-            debugState.activeProvider = activeRelay?.id || "work-direct";
+            debugState.activeProvider = selectedMethod;
             debugState.protocol.sessionToken = {
                 source: null,
                 relay: activeRelay?.tokenInfo || null,
@@ -2417,7 +2477,7 @@
                 return;
             }
 
-            directMode = relayProviders.length === 0;
+            directMode = selectedMethod === "work-direct";
             log("Métodos inicializados", {
                 hasToken: true,
                 tokenSource: debugState.protocol.sessionToken.source,
