@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bypass de work.ink
 // @namespace    http://tampermonkey.net/
-// @version      2026-08-08-27
+// @version      1.67
 // @description  Haz bypass a workInk usando un Bypass Tool. EASx Nigger lmao. Skipped on Top
 // @author       TheRealBanHammer
 // @license      MIT
