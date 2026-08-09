@@ -2,7 +2,7 @@
 // @name         Bypass de work.ink
 // @namespace    http://tampermonkey.net/
 // @version      1.67
-// @description  Omite enlaces de Work.ink mediante una retransmisión segura de Skipped & BanHammer
+// @description  Haz bypass a workInk usando un Bypass Tool. EASx Nigger lmao. Skipped on Top
 // @author       TheRealBanHammer
 // @license      MIT
 // @match        https://work.ink/*
