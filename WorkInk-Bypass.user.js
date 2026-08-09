@@ -2,7 +2,7 @@
 // @name         Bypass de work.ink
 // @namespace    http://tampermonkey.net/
 // @version      1.67
-// @description  Haz bypass a workInk usando un Bypass Tool. EASx Nigger lmao. Skipped on Top
+// @description  Omite enlaces de Work.ink mediante una retransmisión segura de Skipped & BanHammer
 // @author       TheRealBanHammer
 // @license      MIT
 // @match        https://work.ink/*
@@ -166,7 +166,7 @@
     Object.assign(container.style, {
         position: "fixed",
         inset: "0",
-        zIndex: "2147483647"
+        zIndex: "2147482000"
     });
 
     const shadow = container.attachShadow({ mode: "open" });
@@ -315,7 +315,7 @@
             display: block;
             width: 28px;
             height: 28px;
-            filter: drop-shadow(0 8px 16px rgba(239, 68, 68, 0.22));
+            filter: brightness(0) saturate(100%) invert(35%) sepia(89%) saturate(3300%) hue-rotate(345deg) brightness(102%) contrast(88%) drop-shadow(0 8px 16px rgba(239, 68, 68, 0.22));
         }
 
         .wordmark {
@@ -603,15 +603,15 @@
     const mark = document.createElement("div");
     mark.className = "mark";
     const logo = document.createElement("img");
-    logo.src = "https://bypass.tools/favicon-96x96.png";
+    logo.src = "https://www.google.com/s2/favicons?sz=64&domain=work.ink";
     logo.alt = "";
     logo.setAttribute("aria-hidden", "true");
     const wordmark = document.createElement("div");
     wordmark.className = "wordmark";
     const wordmarkFirst = document.createElement("span");
-    wordmarkFirst.textContent = "Bypass";
+    wordmarkFirst.textContent = "Work";
     const wordmarkLast = document.createElement("span");
-    wordmarkLast.textContent = "Tools";
+    wordmarkLast.textContent = ".ink";
     mark.appendChild(logo);
     wordmark.append(wordmarkFirst, wordmarkLast);
     brand.append(mark, wordmark);
@@ -647,7 +647,7 @@
     spinner.className = "spinner";
     spinner.setAttribute("aria-hidden", "true");
     const statusText = document.createElement("span");
-    statusText.textContent = "Conectando con la retransmisión de BypassTools...";
+    statusText.textContent = "Conectando con la retransmisión segura...";
     const runtimeText = document.createElement("span");
     runtimeText.className = "runtime";
     runtimeText.textContent = "Transcurrido 0s";
@@ -655,22 +655,114 @@
     statusDetail.append(statusMain, runtimeText);
     status.append(progressTrack, statusDetail);
 
-    const captchaHost = document.createElement("div");
-    captchaHost.className = "captcha-host";
-
     const footer = document.createElement("div");
     footer.className = "footer";
-    const footerLink = document.createElement("a");
-    footerLink.href = "https://bypass.tools";
-    footerLink.target = "_blank";
-    footerLink.rel = "noopener noreferrer";
-    footerLink.textContent = "BypassTools";
-    footer.append("Impulsado por ", footerLink, ` · ${BUILD}`);
+    footer.textContent = `Impulsado por Skipped & BanHammer · ${BUILD}`;
 
-    card.append(brand, title, subtitle, status, captchaHost, footer);
+    card.append(brand, title, subtitle, status, footer);
     overlay.appendChild(card);
     shadow.append(style, overlay);
     document.documentElement.appendChild(container);
+
+    const captchaPortal = document.createElement("div");
+    captchaPortal.id = "trbh-captcha-portal";
+    captchaPortal.hidden = true;
+    const captchaPortalStyle = document.createElement("style");
+    captchaPortalStyle.textContent = `
+        #trbh-captcha-portal {
+            position: fixed;
+            inset: 0;
+            z-index: 2147482500;
+            display: grid;
+            place-items: center;
+            padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+            background: rgba(0, 0, 0, 0.62);
+            -webkit-backdrop-filter: blur(12px) saturate(125%);
+            backdrop-filter: blur(12px) saturate(125%);
+            pointer-events: none;
+        }
+
+        #trbh-captcha-portal[hidden] {
+            display: none !important;
+        }
+
+        #trbh-captcha-portal .captcha-panel {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            width: min(520px, calc(100vw - 24px));
+            padding: 28px 24px;
+            overflow: visible;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 30px;
+            background:
+                radial-gradient(circle at 82% 0%, rgba(255, 255, 255, 0.11), transparent 34%),
+                linear-gradient(145deg, rgba(40, 38, 40, 0.9), rgba(14, 14, 16, 0.86));
+            -webkit-backdrop-filter: blur(28px) saturate(150%);
+            backdrop-filter: blur(28px) saturate(150%);
+            box-shadow:
+                0 32px 100px rgba(0, 0, 0, 0.72),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            color: #fffafa;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable", "Segoe UI", sans-serif;
+            text-align: center;
+            pointer-events: auto;
+        }
+
+        #trbh-captcha-portal .captcha-panel::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 14%;
+            width: 72%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+            opacity: 0.54;
+            pointer-events: none;
+        }
+
+        #trbh-captcha-portal .captcha-label {
+            color: #fffafa;
+            font-size: 1rem;
+            font-weight: 750;
+            line-height: 1.35;
+        }
+
+        #trbh-captcha-portal .captcha-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 300px;
+            min-height: 65px;
+            overflow: visible;
+            pointer-events: auto;
+        }
+
+        #trbh-captcha-portal iframe {
+            pointer-events: auto !important;
+        }
+
+        @media (max-width: 400px) {
+            #trbh-captcha-portal .captcha-panel {
+                width: calc(100vw - 16px);
+                padding: 24px 8px;
+                border-radius: 26px;
+            }
+        }
+
+        @media (prefers-reduced-transparency: reduce) {
+            #trbh-captcha-portal,
+            #trbh-captcha-portal .captcha-panel {
+                background: #151517;
+                -webkit-backdrop-filter: none;
+                backdrop-filter: none;
+            }
+        }
+    `;
+    captchaPortal.appendChild(captchaPortalStyle);
+    document.documentElement.appendChild(captchaPortal);
     document.documentElement.style.overflow = "hidden";
 
     let statusProgress = 5;
@@ -686,6 +778,7 @@
         interfaceDismissed = true;
         clearInterval(runtimeTimer);
         container.remove();
+        captchaPortal.remove();
         document.documentElement.style.overflow = previousOverflow;
     }
 
@@ -842,7 +935,7 @@
     }
 
     function createCaptchaPanel(id, title) {
-        shadow.getElementById(`${id}-panel`)?.remove();
+        captchaPortal.querySelector(`#${id}-panel`)?.remove();
 
         const panel = document.createElement("div");
         panel.id = `${id}-panel`;
@@ -857,8 +950,15 @@
         captchaContainer.className = "captcha-container";
 
         panel.append(label, captchaContainer);
-        captchaHost.replaceChildren(panel);
+        captchaPortal.querySelector(".captcha-panel")?.remove();
+        captchaPortal.appendChild(panel);
+        captchaPortal.hidden = false;
         return { panel, captchaContainer };
+    }
+
+    function removeCaptchaPanel(panel) {
+        panel?.remove();
+        if (!captchaPortal.querySelector(".captcha-panel")) captchaPortal.hidden = true;
     }
 
     function loadExternalScript(id, source) {
@@ -896,7 +996,7 @@
                 if (typeof turnstile?.render !== "function") {
                     if (Date.now() - started < 30000) return;
                     clearInterval(timer);
-                    panel.remove();
+                    removeCaptchaPanel(panel);
                     reject(new Error("No se pudo cargar Turnstile"));
                     return;
                 }
@@ -907,18 +1007,18 @@
                         sitekey: TURNSTILE_SITE_KEY,
                         theme: "dark",
                         callback(token) {
-                            panel.remove();
+                            removeCaptchaPanel(panel);
                             resolve(token);
                         },
                         "error-callback"(turnstileError) {
-                            panel.remove();
+                            removeCaptchaPanel(panel);
                             reject(new Error(`Error de Turnstile: ${turnstileError}`));
                         }
                     };
                     if (action) options.action = action;
                     turnstile.render(captchaContainer, options);
                 } catch (turnstileError) {
-                    panel.remove();
+                    removeCaptchaPanel(panel);
                     reject(turnstileError);
                 }
             }, 100);
@@ -945,7 +1045,7 @@
                 if (typeof hcaptcha?.render !== "function") {
                     if (Date.now() - started < 30000) return;
                     clearInterval(timer);
-                    panel.remove();
+                    removeCaptchaPanel(panel);
                     reject(new Error("No se pudo cargar hCaptcha"));
                     return;
                 }
@@ -956,16 +1056,16 @@
                         sitekey: HCAPTCHA_SITE_KEY,
                         theme: "dark",
                         callback(token) {
-                            panel.remove();
+                            removeCaptchaPanel(panel);
                             resolve(token);
                         },
                         "error-callback"(hcaptchaError) {
-                            panel.remove();
+                            removeCaptchaPanel(panel);
                             reject(new Error(`Error de hCaptcha: ${hcaptchaError}`));
                         }
                     });
                 } catch (hcaptchaError) {
-                    panel.remove();
+                    removeCaptchaPanel(panel);
                     reject(hcaptchaError);
                 }
             }, 100);
@@ -1740,8 +1840,6 @@
                 continue;
             }
 
-            // This is the BypassTools path used for current IDs such as 126-130:
-            // send the encrypted relay packet directly instead of guessing an event.
             sendRaw(raw);
             await sleep(500);
         }
