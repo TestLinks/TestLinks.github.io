@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bypass de work.ink
 // @namespace    http://tampermonkey.net/
-// @version      1.67
+// @version      1.68
 // @description  Omite enlaces de Work.ink mediante una retransmisión segura de Skipped & BanHammer
 // @author       TheRealBanHammer
 // @license      MIT
@@ -47,13 +47,12 @@
         [SERVER_PACKET.LINK_DESTINATION]: { url: "string" },
         [SERVER_PACKET.MONETIZATION]: { type: "string", payload: "object" }
     });
-    const MINIMUM_REDIRECT_SECONDS = 30;
+    const MINIMUM_REDIRECT_SECONDS = 0;
     const CUSTOM_OFFER_READY_TIMEOUT = 20000;
     const CUSTOM_OFFER_PROGRESS_TIMEOUT = 45000;
-    const OFFER_GOAL_GRACE_TIMEOUT = 30000;
-    const OFFER_STATE_SYNC_TIMEOUT = 5000;
-    const DESTINATION_TIMEOUT = 180000;
-    const PREMIUM_WALL_GRACE_MS = 1500;
+    const OFFER_GOAL_GRACE_TIMEOUT = 8000;
+    const OFFER_STATE_SYNC_TIMEOUT = 2000;
+    const DESTINATION_TIMEOUT = 15000;
 
     if (location.pathname.startsWith("/token/")) return;
 
@@ -313,9 +312,10 @@
 
         .mark img {
             display: block;
-            width: 28px;
-            height: 28px;
-            filter: brightness(0) saturate(100%) invert(35%) sepia(89%) saturate(3300%) hue-rotate(345deg) brightness(102%) contrast(88%) drop-shadow(0 8px 16px rgba(239, 68, 68, 0.22));
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
+            filter: hue-rotate(190deg) saturate(145%) brightness(108%) contrast(105%) drop-shadow(0 8px 16px rgba(239, 68, 68, 0.22));
         }
 
         .wordmark {
@@ -1384,41 +1384,16 @@
 
     function isOfferGoalReached() {
         const progress = getOfferProgress();
-        return Boolean(progress && progress.completedOffers >= progress.neededOffers);
+        return Boolean(
+            offersStateSynced &&
+            progress &&
+            progress.completedOffers >= progress.neededOffers
+        );
     }
 
     function isOfferGoalPacket(packet) {
         return packet.type === SERVER_PACKET.OFFERS_STATE &&
             Number(packet.payload?.completedOffers) >= Number(packet.payload?.neededOffers);
-    }
-
-    function getPremiumWallSeconds() {
-        const configuredSeconds = Number(debugState.linkInfo?.premiumWallSeconds);
-        let visitCount = 0;
-        try {
-            visitCount = Number.parseInt(unsafeWindow.localStorage?.getItem("visitCount") || "0", 10) || 0;
-        } catch {}
-        const clientSeconds = Math.min(120, 60 + Math.max(0, visitCount) * 10);
-        return Math.max(clientSeconds, Number.isFinite(configuredSeconds) ? configuredSeconds : 0);
-    }
-
-    async function waitForPremiumWall() {
-        const seconds = getPremiumWallSeconds();
-        const startedAt = linkInfoReceivedAt || Date.now();
-        const deadline = startedAt + seconds * 1000 + PREMIUM_WALL_GRACE_MS;
-        debugState.premiumWall = { seconds, startedAt, deadline, sentAt: null };
-        log("Temporización del muro premium de Work.ink", debugState.premiumWall);
-
-        let lastReported = null;
-        while (!finished && Date.now() < deadline) {
-            const remaining = Math.max(1, Math.ceil((deadline - Date.now()) / 1000));
-            if (lastReported === null || remaining % 10 === 0 || remaining <= 5) {
-                updateStatus(`Esperando el temporizador requerido de Work.ink (${remaining}s)...`);
-                lastReported = remaining;
-            }
-            await sleep(Math.min(1000, Math.max(1, deadline - Date.now())));
-        }
-        return !finished;
     }
 
     async function waitForOfferStateSync() {
@@ -1616,14 +1591,16 @@
         }
 
         if (envC) sendRaw(envC);
-        if (mdDism) {
-            if (!await waitForPremiumWall()) return;
-            log("Enviando la confirmación del modal premium de Work.ink después del temporizador requerido.");
-            sendRaw(mdDism.encrypted || mdDism);
-            debugState.premiumWall.sentAt = Date.now();
-            await sleep(250);
-        }
         if (pinger) sendRaw(pinger);
+        if (mdDism) {
+            log("Enviando inmediatamente la confirmación del modal premium de Work.ink.");
+            sendRaw(mdDism.encrypted || mdDism);
+            debugState.premiumWall = {
+                sentAt: Date.now(),
+                mode: "immediate"
+            };
+            await sleep(100);
+        }
         if (builtLocalCustomOffers) await waitForOfferStateSync();
         if (finished) return;
 
@@ -1846,7 +1823,7 @@
 
         if (finished) return;
 
-        if (latestOffersState && !isOfferGoalReached()) {
+        if (offersStateSynced && latestOffersState && !isOfferGoalReached()) {
             const goalAfterSequence = relayMessageSequence;
             updateStatus(`Esperando la confirmación del servidor (${latestOffersState.completedOffers}/${latestOffersState.neededOffers})...`);
             const goal = await waitForServerPacket(
