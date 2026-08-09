@@ -15,6 +15,8 @@
 // @connect      skipped.lol
 // @connect      work-direct.ink
 // @connect      work.ink
+// @downloadURL  https://testlinks.github.io/WorkInk-Bypass.user.js
+// @updateURL    https://testlinks.github.io/WorkInk-Bypass.user.js
 // @homepageURL  https://antihambreadoscriptteam.github.io/
 // @supportURL   https://discord.gg/rTGF5xhe3h
 // ==/UserScript==
