@@ -542,6 +542,132 @@
       border-radius: 5px;
     }
 
+    .mention-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 18px;
+      padding: 14px 15px;
+      background: rgba(224, 69, 69, .08);
+      border: 1px solid rgba(224, 69, 69, .3);
+      border-radius: 11px;
+    }
+
+    .mention-copy label {
+      display: block;
+      color: #ffb0a8;
+      font-size: .78rem;
+      font-weight: 800;
+    }
+
+    .mention-copy small {
+      display: block;
+      margin-top: 4px;
+      color: #a77576;
+      font-size: .67rem;
+      line-height: 1.45;
+    }
+
+    .mention-toggle {
+      flex: 0 0 auto;
+      width: 20px;
+      height: 20px;
+      accent-color: #e04545;
+    }
+
+    .mention-preview {
+      display: inline-block;
+      margin: 7px 0 0;
+      padding: 3px 7px;
+      color: #ffaaa3;
+      background: rgba(224, 69, 69, .14);
+      border: 1px solid rgba(224, 69, 69, .3);
+      border-radius: 5px;
+      font-size: .7rem;
+      font-weight: 800;
+    }
+
+    .mention-preview[hidden] {
+      display: none;
+    }
+
+    .image-row {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+      padding: 14px 15px;
+      background: rgba(255, 255, 255, .025);
+      border: 1px solid var(--line);
+      border-radius: 11px;
+    }
+
+    .image-copy label {
+      display: block;
+      color: #d7d5d0;
+      font-size: .78rem;
+      font-weight: 800;
+    }
+
+    .image-copy small {
+      display: block;
+      margin-top: 4px;
+      color: var(--quiet);
+      font-size: .67rem;
+      line-height: 1.45;
+    }
+
+    .image-url-input {
+      min-height: 78px;
+      padding: 11px 13px;
+      resize: vertical;
+      font-family: Consolas, "SFMono-Regular", monospace;
+      font-size: .7rem;
+      line-height: 1.5;
+    }
+
+    .image-url-status {
+      margin: 0;
+      color: var(--quiet);
+      font-family: Consolas, "SFMono-Regular", monospace;
+      font-size: .64rem;
+      line-height: 1.45;
+    }
+
+    .image-preview-wrap {
+      position: relative;
+      margin-top: 12px;
+      overflow: hidden;
+      background: #15161a;
+      border: 1px solid #3a3c45;
+      border-radius: 6px;
+    }
+
+    .image-preview-wrap[hidden] {
+      display: none;
+    }
+
+    .image-preview-wrap img {
+      display: block;
+      width: 100%;
+      max-height: 280px;
+      object-fit: cover;
+    }
+
+    .image-count-badge {
+      position: absolute;
+      right: 9px;
+      bottom: 9px;
+      padding: 5px 7px;
+      color: #fff1e8;
+      background: rgba(16, 18, 22, .82);
+      border: 1px solid rgba(255, 255, 255, .18);
+      border-radius: 6px;
+      font-family: Consolas, "SFMono-Regular", monospace;
+      font-size: .62rem;
+      font-weight: 700;
+    }
+
     .action-row {
       display: flex;
       align-items: center;
@@ -932,11 +1058,28 @@
           </div>
         </div>
 
+        <div class="mention-row">
+          <div class="mention-copy">
+            <label for="mention-everyone">Mencionar @everyone</label>
+            <small>Envía la mención como mensaje para que Discord pueda notificarla.</small>
+          </div>
+          <input class="mention-toggle" id="mention-everyone" name="mention-everyone" type="checkbox">
+        </div>
+
+        <div class="image-row">
+          <div class="image-copy">
+            <label for="embed-image-urls">URLs de imágenes</label>
+            <small>La primera aparecerá dentro del embed; las demás se enviarán como embeds adicionales.</small>
+          </div>
+          <textarea class="image-url-input" id="embed-image-urls" name="embed-image-urls" placeholder="https://ejemplo.com/imagen.png&#10;https://ejemplo.com/segunda-imagen.jpg" spellcheck="false"></textarea>
+          <p class="image-url-status" id="image-url-status" aria-live="polite">Sin imágenes seleccionadas.</p>
+        </div>
+
         <div class="action-row">
           <button class="send-button" id="send-button" type="submit">Enviar embed <span aria-hidden="true">↗</span></button>
           <button class="reset-button" id="reset-button" type="reset">Limpiar</button>
         </div>
-        <p class="form-message" id="form-message" role="status" aria-live="polite">El título o la descripción deben tener contenido.</p>
+        <p class="form-message" id="form-message" role="status" aria-live="polite">Escribe un título, una descripción o adjunta una imagen.</p>
       </form>
 
       <aside class="panel preview-panel" aria-labelledby="preview-heading">
@@ -950,9 +1093,14 @@
             <div class="avatar" aria-hidden="true">ED</div>
             <div class="message-body">
               <div class="message-meta"><strong>Tu webhook</strong><span>hoy a las 12:00</span></div>
+              <p class="mention-preview" id="mention-preview" hidden>@everyone</p>
               <div class="embed-card" id="embed-card">
                 <h3 class="embed-title embed-empty" id="preview-title">Tu título aparecerá aquí</h3>
                 <p class="embed-description embed-empty" id="preview-description">Tu descripción aparecerá aquí</p>
+                <div class="image-preview-wrap" id="image-preview-wrap" hidden>
+                  <img id="preview-image" alt="Vista previa de la imagen enlazada">
+                  <span class="image-count-badge" id="image-count-badge" hidden></span>
+                </div>
               </div>
             </div>
           </div>
@@ -1010,11 +1158,18 @@
     const titleInput = document.querySelector("#embed-title");
     const descriptionInput = document.querySelector("#embed-description");
     const colorInput = document.querySelector("#embed-color");
+    const mentionEveryoneInput = document.querySelector("#mention-everyone");
+    const imageUrlsInput = document.querySelector("#embed-image-urls");
     const titleCount = document.querySelector("#title-count");
     const descriptionCount = document.querySelector("#description-count");
+    const imageUrlStatus = document.querySelector("#image-url-status");
     const colorValue = document.querySelector("#color-value");
     const previewTitle = document.querySelector("#preview-title");
     const previewDescription = document.querySelector("#preview-description");
+    const mentionPreview = document.querySelector("#mention-preview");
+    const imagePreviewWrap = document.querySelector("#image-preview-wrap");
+    const previewImage = document.querySelector("#preview-image");
+    const imageCountBadge = document.querySelector("#image-count-badge");
     const embedCard = document.querySelector("#embed-card");
     const payloadPreview = document.querySelector("#payload-preview");
     const sendButton = document.querySelector("#send-button");
@@ -1137,10 +1292,44 @@
       setMessage(`Favorita "${favorite.name}" eliminada.`, "success");
     }
 
+    function getImageUrls() {
+      return imageUrlsInput.value
+        .split(/\r?\n/)
+        .map((value) => value.trim())
+        .filter((value) => {
+          try {
+            const url = new URL(value);
+            return url.protocol === "https:" || url.protocol === "http:";
+          } catch (error) {
+            return false;
+          }
+        })
+        .slice(0, 10);
+    }
+
+    function updateImagePreview() {
+      const imageUrls = getImageUrls();
+      imagePreviewWrap.hidden = imageUrls.length === 0;
+      imageCountBadge.hidden = imageUrls.length < 2;
+
+      if (!imageUrls.length) {
+        previewImage.removeAttribute("src");
+        imageUrlStatus.textContent = "Sin imágenes seleccionadas.";
+        return;
+      }
+
+      previewImage.src = imageUrls[0];
+      previewImage.alt = `Vista previa de ${imageUrls[0]}`;
+      imageCountBadge.textContent = `+${imageUrls.length - 1} más`;
+      imageUrlStatus.textContent = imageUrls.length === 1 ? "1 imagen lista para enviar." : `${imageUrls.length} imágenes listas para enviar.`;
+    }
+
     function getPayload() {
       const title = titleInput.value.trim();
       const description = descriptionInput.value.trim();
       const color = Number.parseInt(colorInput.value.slice(1), 16);
+      const mentionEveryone = mentionEveryoneInput.checked;
+      const imageUrls = getImageUrls();
       const embed = { color };
 
       if (title) {
@@ -1151,10 +1340,25 @@
         embed.description = description;
       }
 
-      return {
-        embeds: [embed],
-        allowed_mentions: { parse: [] }
+      if (imageUrls[0]) {
+        embed.image = { url: imageUrls[0] };
+      }
+
+      const embeds = [embed];
+      imageUrls.slice(1).forEach((imageUrl) => {
+        embeds.push({ color, image: { url: imageUrl } });
+      });
+
+      const payload = {
+        embeds,
+        allowed_mentions: { parse: mentionEveryone ? ["everyone"] : [] }
       };
+
+      if (mentionEveryone) {
+        payload.content = "@everyone";
+      }
+
+      return payload;
     }
 
     function updatePreview() {
@@ -1170,6 +1374,7 @@
       previewDescription.textContent = description || "Tu descripción aparecerá aquí";
       previewTitle.classList.toggle("embed-empty", !title);
       previewDescription.classList.toggle("embed-empty", !description);
+      mentionPreview.hidden = !mentionEveryoneInput.checked;
       embedCard.style.setProperty("--embed", colorInput.value);
       colorValue.textContent = colorInput.value.toUpperCase();
       titleCount.textContent = `${titleInput.value.length} / 256`;
@@ -1224,14 +1429,20 @@
     titleInput.addEventListener("input", updatePreview);
     descriptionInput.addEventListener("input", updatePreview);
     colorInput.addEventListener("input", updatePreview);
+    mentionEveryoneInput.addEventListener("change", updatePreview);
+    imageUrlsInput.addEventListener("input", () => {
+      updateImagePreview();
+      updatePreview();
+    });
 
     form.addEventListener("reset", () => {
       const activeUrl = webhookUrlInput.value;
       window.setTimeout(() => {
         webhookUrlInput.value = activeUrl;
         renderFavorites();
+        updateImagePreview();
         updatePreview();
-        setMessage("El título o la descripción deben tener contenido.");
+        setMessage("Escribe un título, una descripción o adjunta una imagen.");
       }, 0);
     });
 
@@ -1240,6 +1451,7 @@
       const activeWebhookUrl = webhookUrlInput.value.trim();
       const title = titleInput.value.trim();
       const description = descriptionInput.value.trim();
+      const imageUrls = getImageUrls();
 
       if (!isValidWebhookUrl(activeWebhookUrl)) {
         setMessage("Escribe una URL de webhook de Discord válida.", "error");
@@ -1247,8 +1459,8 @@
         return;
       }
 
-      if (!title && !description) {
-        setMessage("Escribe un título o una descripción antes de enviar.", "error");
+      if (!title && !description && !imageUrls.length) {
+        setMessage("Escribe un título, una descripción o adjunta una imagen antes de enviar.", "error");
         titleInput.focus();
         return;
       }
@@ -1293,6 +1505,7 @@
     });
 
     renderFavorites();
+    updateImagePreview();
     updatePreview();
   </script>
 </body>
