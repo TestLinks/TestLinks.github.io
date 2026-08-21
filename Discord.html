@@ -634,6 +634,90 @@
       line-height: 1.45;
     }
 
+    .image-source-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--quiet);
+      font-family: Consolas, "SFMono-Regular", monospace;
+      font-size: .62rem;
+      text-transform: uppercase;
+    }
+
+    .image-source-divider::before,
+    .image-source-divider::after {
+      flex: 1;
+      height: 1px;
+      content: "";
+      background: var(--line);
+    }
+
+    .image-file-controls {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    input[type="file"] {
+      min-width: 0;
+      flex: 1;
+      color: var(--muted);
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      font-size: .7rem;
+    }
+
+    input[type="file"]::file-selector-button {
+      margin-right: 10px;
+      padding: 9px 11px;
+      color: #f9e4db;
+      background: #37313a;
+      border: 0;
+      border-right: 1px solid var(--line);
+      font: inherit;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .clear-files {
+      min-height: 40px;
+      padding: 0 11px;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      font-size: .68rem;
+      font-weight: 750;
+    }
+
+    .clear-files:hover {
+      color: var(--ink);
+      border-color: #555a68;
+    }
+
+    .image-file-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .image-file-list li {
+      max-width: 100%;
+      padding: 5px 8px;
+      overflow: hidden;
+      color: #b4b6c0;
+      background: rgba(255, 255, 255, .04);
+      border-radius: 6px;
+      font-family: Consolas, "SFMono-Regular", monospace;
+      font-size: .62rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .image-preview-wrap {
       position: relative;
       margin-top: 12px;
@@ -1069,9 +1153,15 @@
         <div class="image-row">
           <div class="image-copy">
             <label for="embed-image-urls">URLs de imágenes</label>
-            <small>La primera aparecerá dentro del embed; las demás se enviarán como embeds adicionales.</small>
+            <small>La primera imagen aparecerá dentro del embed y las demás como embeds adicionales.</small>
           </div>
           <textarea class="image-url-input" id="embed-image-urls" name="embed-image-urls" placeholder="https://ejemplo.com/imagen.png&#10;https://ejemplo.com/segunda-imagen.jpg" spellcheck="false"></textarea>
+          <div class="image-source-divider">o sube desde tu dispositivo</div>
+          <div class="image-file-controls">
+            <input id="embed-image-files" name="embed-image-files" type="file" accept="image/*" multiple>
+            <button class="clear-files" id="clear-files" type="button" hidden>Quitar</button>
+          </div>
+          <ul class="image-file-list" id="image-file-list" aria-live="polite"></ul>
           <p class="image-url-status" id="image-url-status" aria-live="polite">Sin imágenes seleccionadas.</p>
         </div>
 
@@ -1160,8 +1250,11 @@
     const colorInput = document.querySelector("#embed-color");
     const mentionEveryoneInput = document.querySelector("#mention-everyone");
     const imageUrlsInput = document.querySelector("#embed-image-urls");
+    const imageFilesInput = document.querySelector("#embed-image-files");
+    const clearFilesButton = document.querySelector("#clear-files");
     const titleCount = document.querySelector("#title-count");
     const descriptionCount = document.querySelector("#description-count");
+    const imageFileList = document.querySelector("#image-file-list");
     const imageUrlStatus = document.querySelector("#image-url-status");
     const colorValue = document.querySelector("#color-value");
     const previewTitle = document.querySelector("#preview-title");
@@ -1175,6 +1268,7 @@
     const sendButton = document.querySelector("#send-button");
     const formMessage = document.querySelector("#form-message");
     let favorites = loadFavorites();
+    let previewObjectUrl = "";
 
     function isValidWebhookUrl(value) {
       try {
@@ -1307,21 +1401,70 @@
         .slice(0, 10);
     }
 
-    function updateImagePreview() {
-      const imageUrls = getImageUrls();
-      imagePreviewWrap.hidden = imageUrls.length === 0;
-      imageCountBadge.hidden = imageUrls.length < 2;
+    function getImageFiles() {
+      return Array.from(imageFilesInput.files || []).filter((file) => file.type.startsWith("image/")).slice(0, 10);
+    }
 
-      if (!imageUrls.length) {
+    function getImageSources() {
+      const urlSources = getImageUrls().map((url) => ({ type: "url", value: url }));
+      const fileSources = getImageFiles().map((file) => ({ type: "file", value: file }));
+      return [...urlSources, ...fileSources].slice(0, 10);
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes < 1024 * 1024) {
+        return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+      }
+
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    function updateImagePreview() {
+      const imageSources = getImageSources();
+      const imageFiles = getImageFiles();
+      imagePreviewWrap.hidden = imageSources.length === 0;
+      imageCountBadge.hidden = imageSources.length < 2;
+      clearFilesButton.hidden = imageFiles.length === 0;
+      imageFileList.textContent = "";
+
+      imageFiles.forEach((file) => {
+        const item = document.createElement("li");
+        item.textContent = `${file.name} · ${formatFileSize(file.size)}`;
+        item.title = file.name;
+        imageFileList.append(item);
+      });
+
+      if (previewObjectUrl) {
+        URL.revokeObjectURL(previewObjectUrl);
+        previewObjectUrl = "";
+      }
+
+      if (!imageSources.length) {
         previewImage.removeAttribute("src");
         imageUrlStatus.textContent = "Sin imágenes seleccionadas.";
         return;
       }
 
-      previewImage.src = imageUrls[0];
-      previewImage.alt = `Vista previa de ${imageUrls[0]}`;
-      imageCountBadge.textContent = `+${imageUrls.length - 1} más`;
-      imageUrlStatus.textContent = imageUrls.length === 1 ? "1 imagen lista para enviar." : `${imageUrls.length} imágenes listas para enviar.`;
+      const firstSource = imageSources[0];
+      if (firstSource.type === "file") {
+        previewObjectUrl = URL.createObjectURL(firstSource.value);
+        previewImage.src = previewObjectUrl;
+        previewImage.alt = `Vista previa de ${firstSource.value.name}`;
+      } else {
+        previewImage.src = firstSource.value;
+        previewImage.alt = `Vista previa de ${firstSource.value}`;
+      }
+
+      imageCountBadge.textContent = `+${imageSources.length - 1} más`;
+      const urlCount = getImageUrls().length;
+      const fileCount = imageFiles.length;
+      if (urlCount && fileCount) {
+        imageUrlStatus.textContent = `${urlCount} URL${urlCount === 1 ? "" : "s"} y ${fileCount} archivo${fileCount === 1 ? "" : "s"} listos para enviar.`;
+      } else if (fileCount) {
+        imageUrlStatus.textContent = `${fileCount} archivo${fileCount === 1 ? "" : "s"} listo${fileCount === 1 ? "" : "s"} para enviar.`;
+      } else {
+        imageUrlStatus.textContent = `${urlCount} URL${urlCount === 1 ? "" : "s"} lista${urlCount === 1 ? "" : "s"} para enviar.`;
+      }
     }
 
     function getPayload() {
@@ -1329,7 +1472,7 @@
       const description = descriptionInput.value.trim();
       const color = Number.parseInt(colorInput.value.slice(1), 16);
       const mentionEveryone = mentionEveryoneInput.checked;
-      const imageUrls = getImageUrls();
+      const imageSources = getImageSources();
       const embed = { color };
 
       if (title) {
@@ -1340,13 +1483,13 @@
         embed.description = description;
       }
 
-      if (imageUrls[0]) {
-        embed.image = { url: imageUrls[0] };
+      if (imageSources[0]) {
+        embed.image = { url: imageSources[0].type === "file" ? `attachment://${imageSources[0].value.name}` : imageSources[0].value };
       }
 
       const embeds = [embed];
-      imageUrls.slice(1).forEach((imageUrl) => {
-        embeds.push({ color, image: { url: imageUrl } });
+      imageSources.slice(1).forEach((imageSource) => {
+        embeds.push({ color, image: { url: imageSource.type === "file" ? `attachment://${imageSource.value.name}` : imageSource.value } });
       });
 
       const payload = {
@@ -1434,6 +1577,16 @@
       updateImagePreview();
       updatePreview();
     });
+    imageFilesInput.addEventListener("change", () => {
+      updateImagePreview();
+      updatePreview();
+    });
+
+    clearFilesButton.addEventListener("click", () => {
+      imageFilesInput.value = "";
+      updateImagePreview();
+      updatePreview();
+    });
 
     form.addEventListener("reset", () => {
       const activeUrl = webhookUrlInput.value;
@@ -1451,7 +1604,7 @@
       const activeWebhookUrl = webhookUrlInput.value.trim();
       const title = titleInput.value.trim();
       const description = descriptionInput.value.trim();
-      const imageUrls = getImageUrls();
+      const imageSources = getImageSources();
 
       if (!isValidWebhookUrl(activeWebhookUrl)) {
         setMessage("Escribe una URL de webhook de Discord válida.", "error");
@@ -1459,7 +1612,7 @@
         return;
       }
 
-      if (!title && !description && !imageUrls.length) {
+      if (!title && !description && !imageSources.length) {
         setMessage("Escribe un título, una descripción o adjunta una imagen antes de enviar.", "error");
         titleInput.focus();
         return;
@@ -1472,11 +1625,22 @@
       try {
         const targetUrl = new URL(activeWebhookUrl);
         targetUrl.searchParams.set("wait", "true");
-        const response = await fetch(targetUrl.toString(), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(getPayload())
-        });
+        const imageFiles = imageSources.filter((source) => source.type === "file").map((source) => source.value);
+        const requestOptions = { method: "POST" };
+
+        if (imageFiles.length) {
+          const formData = new FormData();
+          formData.append("payload_json", JSON.stringify(getPayload()));
+          imageFiles.forEach((file, index) => {
+            formData.append(`files[${index}]`, file, file.name);
+          });
+          requestOptions.body = formData;
+        } else {
+          requestOptions.headers = { "Content-Type": "application/json" };
+          requestOptions.body = JSON.stringify(getPayload());
+        }
+
+        const response = await fetch(targetUrl.toString(), requestOptions);
 
         if (!response.ok) {
           let detail = "Discord rechazó el embed.";
