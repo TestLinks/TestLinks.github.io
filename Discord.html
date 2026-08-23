@@ -3,29 +3,32 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0d0f12">
-  <meta name="description" content="Editor visual de embeds para webhooks de Discord.">
-  <title>Embed Studio</title>
+  <meta name="theme-color" content="#111318">
+  <meta name="description" content="Creador visual de mensajes para webhooks de Discord.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235865f2'/%3E%3Cpath d='M9 10h14v12H9zM12 14h8M12 18h5' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E">
+  <title>Webhook Builder</title>
   <style>
     :root {
       color-scheme: dark;
-      --bg: #0d0f12;
-      --panel: #171a1f;
-      --panel-2: #1d2127;
-      --input: #101318;
-      --line: #303640;
-      --line-soft: #272c33;
-      --text: #f2f3f5;
-      --muted: #969da7;
-      --quiet: #6f7680;
-      --red: #ef4444;
-      --red-dark: #d93636;
-      --green: #49ca8a;
-      --yellow: #f2bd4d;
-      --danger: #ff7b7b;
-      --radius: 12px;
+      --bg: #111318;
+      --bar: #16181e;
+      --panel: #1b1e24;
+      --panel-2: #20242b;
+      --input: #11141a;
+      --line: #343a45;
+      --line-soft: #2a2f38;
+      --text: #f3f4f6;
+      --muted: #a6acb6;
+      --quiet: #747c89;
+      --blue: #5865f2;
+      --blue-hover: #4752c4;
+      --red: #ed4245;
+      --green: #3ba55d;
+      --yellow: #f0b232;
+      --danger: #ff6b6e;
+      --radius: 10px;
       --radius-sm: 6px;
-      --max: 1460px;
+      --max: 1480px;
     }
 
     * {
@@ -40,28 +43,23 @@
     body {
       min-width: 320px;
       margin: 0;
-      background:
-        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
-        var(--bg);
-      background-size: 100% 44px;
+      background: var(--bg);
       color: var(--text);
-      font: 15px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font: 14px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     button,
     input,
-    textarea,
-    select {
+    textarea {
       font: inherit;
     }
 
     button:focus-visible,
     input:focus-visible,
     textarea:focus-visible,
-    select:focus-visible,
     summary:focus-visible,
     a:focus-visible {
-      outline: 2px solid #ff7777;
+      outline: 2px solid #8b95ff;
       outline-offset: 2px;
     }
 
@@ -73,75 +71,73 @@
       display: none !important;
     }
 
-    .topbar {
+    .appbar {
       position: sticky;
       top: 0;
-      z-index: 20;
+      z-index: 30;
       border-bottom: 1px solid var(--line-soft);
-      background: rgba(13,15,18,.94);
-      backdrop-filter: blur(12px);
+      background: var(--bar);
     }
 
-    .topbar-inner,
+    .appbar-inner,
     .page {
-      width: min(calc(100% - 32px), var(--max));
+      width: min(calc(100% - 28px), var(--max));
       margin-inline: auto;
     }
 
-    .topbar-inner {
-      min-height: 64px;
+    .appbar-inner {
+      min-height: 60px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      gap: 14px;
     }
 
     .brand {
       min-width: 0;
       display: flex;
       align-items: center;
-      gap: 11px;
+      gap: 10px;
     }
 
-    .brand-mark {
+    .brand-icon {
       width: 34px;
       height: 34px;
       flex: 0 0 auto;
       display: grid;
       place-items: center;
       border-radius: 8px;
-      background: var(--red);
+      background: var(--blue);
       color: white;
-      font-size: 12px;
+      font-size: 16px;
       font-weight: 900;
     }
 
-    .brand-copy strong,
-    .brand-copy span {
+    .brand strong,
+    .brand small {
       display: block;
     }
 
-    .brand-copy strong {
-      font-size: 15px;
-      line-height: 1.15;
+    .brand strong {
+      font-size: 14px;
     }
 
-    .brand-copy span {
-      margin-top: 3px;
+    .brand small {
+      margin-top: 1px;
       color: var(--quiet);
-      font-size: 11px;
+      font-size: 10px;
     }
 
-    .destination-state {
+    .connection {
       display: inline-flex;
       align-items: center;
       gap: 7px;
       color: var(--muted);
       font-size: 11px;
-      font-weight: 750;
+      font-weight: 700;
     }
 
-    .destination-state::before {
+    .connection::before {
       width: 8px;
       height: 8px;
       border-radius: 50%;
@@ -149,159 +145,193 @@
       content: "";
     }
 
-    .destination-state.ready::before {
+    .connection.ready::before {
       background: var(--green);
-      box-shadow: 0 0 0 4px rgba(73,202,138,.1);
     }
 
-    .destination-state.invalid::before {
+    .connection.invalid::before {
       background: var(--danger);
     }
 
     .page {
-      margin-top: 26px;
-      margin-bottom: 48px;
+      padding: 22px 0 40px;
     }
 
     .workspace {
       display: grid;
-      grid-template-columns: minmax(0,1fr) minmax(390px,.72fr);
+      grid-template-columns: minmax(0, 1fr) minmax(390px, .72fr);
       align-items: start;
-      gap: 22px;
+      gap: 20px;
     }
 
     .editor {
       min-width: 0;
       display: grid;
-      gap: 13px;
+      gap: 10px;
     }
 
-    .panel {
+    .tool-panel,
+    .send-panel,
+    .preview-panel {
       min-width: 0;
       border: 1px solid var(--line);
       border-radius: var(--radius);
       background: var(--panel);
-      box-shadow: 0 12px 34px rgba(0,0,0,.14);
     }
 
-    .panel-head {
+    .tool-panel {
+      overflow: clip;
+    }
+
+    .tool-panel > summary {
       min-height: 56px;
-      padding: 13px 16px;
+      padding: 11px 14px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 12px;
+      gap: 11px;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+    }
+
+    .tool-panel > summary::-webkit-details-marker,
+    .section-card > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .tool-panel[open] > summary {
       border-bottom: 1px solid var(--line-soft);
     }
 
-    .panel-title {
-      min-width: 0;
-      display: flex;
-      align-items: center;
-      gap: 9px;
-    }
-
-    .panel-title h2 {
-      margin: 0;
-      font-size: 14px;
-      font-weight: 800;
-    }
-
-    .step {
-      width: 24px;
-      height: 24px;
+    .tool-number {
+      width: 28px;
+      height: 28px;
       flex: 0 0 auto;
       display: grid;
       place-items: center;
-      border: 1px solid #454c57;
-      border-radius: 6px;
-      color: #cfd3d8;
-      font-size: 10px;
+      border-radius: 7px;
+      background: #292e38;
+      color: #cdd1d8;
+      font-size: 11px;
       font-weight: 850;
     }
 
-    .panel-body {
-      padding: 16px;
-    }
-
-    .field-grid {
-      display: grid;
-      grid-template-columns: repeat(2,minmax(0,1fr));
-      gap: 13px;
-    }
-
-    .full {
-      grid-column: 1/-1;
-    }
-
-    .field {
+    .tool-heading {
       min-width: 0;
-      display: grid;
-      gap: 7px;
+      flex: 1;
     }
 
-    .field-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
+    .tool-heading strong,
+    .tool-heading small {
+      display: block;
     }
 
-    .field label,
-    .field-label {
-      color: #d7dae0;
-      font-size: 12px;
-      font-weight: 750;
+    .tool-heading strong {
+      font-size: 13px;
     }
 
-    .counter,
-    .limit {
+    .tool-heading small {
+      margin-top: 2px;
+      color: var(--quiet);
+      font-size: 10px;
+      font-weight: 500;
+    }
+
+    .tool-count {
       color: var(--quiet);
       font-size: 10px;
       font-variant-numeric: tabular-nums;
     }
 
+    .chevron {
+      width: 22px;
+      color: var(--quiet);
+      font-size: 16px;
+      text-align: center;
+      transition: transform .15s ease;
+    }
+
+    .tool-panel[open] .chevron {
+      transform: rotate(180deg);
+    }
+
+    .tool-body {
+      padding: 15px;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    .field {
+      min-width: 0;
+      display: grid;
+      gap: 6px;
+    }
+
+    .field-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .field label,
+    .field-label {
+      color: #daddE3;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .counter,
+    .file-state,
+    .helper {
+      color: var(--quiet);
+      font-size: 10px;
+    }
+
+    .helper {
+      margin: 0;
+    }
+
     .input,
-    .textarea,
-    .select {
+    .textarea {
       width: 100%;
       min-width: 0;
-      border: 1px solid #39404a;
+      border: 1px solid #3b424e;
       border-radius: var(--radius-sm);
       background: var(--input);
       color: var(--text);
       transition: border-color .15s ease, box-shadow .15s ease;
     }
 
-    .input,
-    .select {
+    .input {
       min-height: 42px;
       padding: 9px 11px;
     }
 
     .textarea {
-      min-height: 112px;
+      min-height: 104px;
       padding: 10px 11px;
       resize: vertical;
     }
 
     .input::placeholder,
     .textarea::placeholder {
-      color: #5e6570;
+      color: #5f6773;
     }
 
     .input:focus,
-    .textarea:focus,
-    .select:focus {
-      border-color: #d65b5b;
-      box-shadow: 0 0 0 3px rgba(239,68,68,.11);
+    .textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(88, 101, 242, .16);
       outline: 0;
-    }
-
-    .helper {
-      margin: 0;
-      color: var(--quiet);
-      font-size: 10px;
     }
 
     .button {
@@ -311,35 +341,38 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      border: 1px solid #444b55;
+      border: 1px solid #48505d;
       border-radius: var(--radius-sm);
-      background: #242930;
-      color: #e7e9ec;
+      background: #292e37;
+      color: #f0f1f3;
       cursor: pointer;
       font-size: 11px;
       font-weight: 800;
       text-decoration: none;
-      transition: background .15s ease, border-color .15s ease, transform .15s ease;
     }
 
     .button:hover {
-      border-color: #59616d;
-      background: #2b3038;
-    }
-
-    .button:active {
-      transform: translateY(1px);
+      background: #333945;
     }
 
     .button.primary {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: white;
+    }
+
+    .button.primary:hover {
+      background: var(--blue-hover);
+    }
+
+    .button.send {
       border-color: var(--red);
       background: var(--red);
       color: white;
     }
 
-    .button.primary:hover {
-      border-color: var(--red-dark);
-      background: var(--red-dark);
+    .button.send:hover {
+      background: #c93a3d;
     }
 
     .button.ghost {
@@ -349,7 +382,187 @@
     .button:disabled {
       cursor: not-allowed;
       opacity: .45;
-      transform: none;
+    }
+
+    .webhook-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 160px auto;
+      gap: 8px;
+    }
+
+    .favorite-box {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line-soft);
+    }
+
+    .favorite-head,
+    .section-toolbar,
+    .attachment-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .favorite-head strong,
+    .attachment-head strong {
+      font-size: 11px;
+    }
+
+    .favorites-list {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .favorite-item {
+      min-width: 0;
+      padding: 9px;
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid var(--line-soft);
+      border-radius: 7px;
+      background: #15181e;
+    }
+
+    .favorite-item.active {
+      border-color: rgba(240, 178, 50, .55);
+    }
+
+    .star {
+      color: var(--yellow);
+    }
+
+    .favorite-copy {
+      min-width: 0;
+    }
+
+    .favorite-copy strong,
+    .favorite-copy small {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .favorite-copy strong {
+      font-size: 10px;
+    }
+
+    .favorite-copy small {
+      margin-top: 2px;
+      color: var(--quiet);
+      font: 8px/1.2 "SFMono-Regular", Consolas, monospace;
+    }
+
+    .favorite-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .icon-button {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border: 1px solid #3d444f;
+      border-radius: 5px;
+      background: #22262e;
+      color: #d7dae0;
+      cursor: pointer;
+      font-size: 11px;
+    }
+
+    .icon-button.danger {
+      color: var(--danger);
+    }
+
+    .empty-state {
+      margin: 8px 0 0;
+      padding: 13px;
+      border: 1px dashed #3a414c;
+      border-radius: 7px;
+      color: var(--quiet);
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .switch-row {
+      min-height: 42px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid #3b424e;
+      border-radius: var(--radius-sm);
+      background: var(--input);
+      cursor: pointer;
+    }
+
+    .switch-copy strong,
+    .switch-copy small {
+      display: block;
+    }
+
+    .switch-copy strong {
+      font-size: 11px;
+    }
+
+    .switch-copy small {
+      color: var(--quiet);
+      font-size: 9px;
+    }
+
+    .switch {
+      position: relative;
+      width: 38px;
+      height: 22px;
+      flex: 0 0 auto;
+    }
+
+    .switch input {
+      position: absolute;
+      z-index: 2;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .switch span {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: #444b56;
+      transition: background .15s ease;
+      pointer-events: none;
+    }
+
+    .switch span::after {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: white;
+      content: "";
+      transition: transform .15s ease;
+    }
+
+    .switch input:checked + span {
+      background: var(--blue);
+    }
+
+    .switch input:checked + span::after {
+      transform: translateX(16px);
     }
 
     .color-control {
@@ -357,8 +570,8 @@
       padding: 5px 8px;
       display: flex;
       align-items: center;
-      gap: 9px;
-      border: 1px solid #39404a;
+      gap: 8px;
+      border: 1px solid #3b424e;
       border-radius: var(--radius-sm);
       background: var(--input);
     }
@@ -368,58 +581,50 @@
       height: 30px;
       padding: 0;
       border: 0;
-      border-radius: 4px;
       background: transparent;
       cursor: pointer;
     }
 
     .color-control output {
-      font: 700 11px/1 "SFMono-Regular", Consolas, monospace;
+      font: 700 10px/1 "SFMono-Regular", Consolas, monospace;
     }
 
     .media-grid {
       display: grid;
-      grid-template-columns: repeat(2,minmax(0,1fr));
-      gap: 11px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
     }
 
-    .media-slot,
-    .editor-block {
+    .media-card {
       min-width: 0;
-      padding: 13px;
+      padding: 12px;
       border: 1px solid var(--line-soft);
-      border-radius: 9px;
-      background: #13161a;
+      border-radius: 8px;
+      background: #16191f;
     }
 
-    .media-head,
-    .block-head,
-    .attachments-head {
+    .media-title {
+      margin-bottom: 9px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 8px;
     }
 
-    .media-head {
-      margin-bottom: 10px;
-    }
-
-    .media-head strong,
-    .block-head strong {
+    .media-title strong {
       font-size: 11px;
     }
 
     .optional {
       color: var(--quiet);
-      font-size: 9px;
+      font-size: 8px;
       font-weight: 800;
       letter-spacing: .08em;
       text-transform: uppercase;
     }
 
     .media-actions {
-      margin-top: 9px;
+      margin-top: 8px;
       display: flex;
       align-items: center;
       gap: 7px;
@@ -439,40 +644,38 @@
       clip-path: inset(50%);
     }
 
-    .file-status {
+    .file-state {
       min-width: 0;
-      flex: 1 1 110px;
+      flex: 1 1 100px;
       overflow: hidden;
-      color: var(--quiet);
-      font-size: 10px;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
     .attachments {
-      margin-top: 12px;
-      padding-top: 13px;
+      margin-top: 10px;
+      padding-top: 11px;
       border-top: 1px solid var(--line-soft);
     }
 
-    .attachment-list,
-    .preview-attachments {
-      margin-top: 9px;
+    .file-list,
+    .preview-files {
+      margin-top: 8px;
       display: flex;
-      gap: 6px;
       flex-wrap: wrap;
+      gap: 5px;
     }
 
     .file-chip {
       max-width: 100%;
-      padding: 5px 7px;
+      padding: 4px 7px;
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      border: 1px solid #3b424c;
+      border: 1px solid #3c434e;
       border-radius: 5px;
-      background: #1d2127;
-      color: #ccd0d5;
+      background: #20242b;
+      color: #cdd1d7;
       font-size: 9px;
     }
 
@@ -482,75 +685,143 @@
       white-space: nowrap;
     }
 
-    .block-list {
+    .section-toolbar {
+      margin-bottom: 9px;
+    }
+
+    .section-list,
+    .button-list {
       display: grid;
-      gap: 9px;
+      gap: 7px;
     }
 
-    .editor-block {
-      display: grid;
-      gap: 9px;
+    .section-card,
+    .button-card {
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: #16191f;
     }
 
-    .block-head strong {
-      color: #b6bbc3;
-      letter-spacing: .07em;
-      text-transform: uppercase;
+    .section-card {
+      overflow: clip;
     }
 
-    .remove {
-      min-height: 30px;
-      padding: 5px 7px;
-      border: 1px solid transparent;
-      border-radius: 5px;
-      background: transparent;
-      color: #ff8b8b;
+    .section-card > summary {
+      min-height: 46px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
       cursor: pointer;
-      font-size: 10px;
-      font-weight: 750;
+      list-style: none;
     }
 
-    .remove:hover {
-      border-color: rgba(255,123,123,.25);
-      background: rgba(255,123,123,.08);
+    .section-card[open] > summary {
+      border-bottom: 1px solid #282d35;
+    }
+
+    .section-card .section-index {
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 5px;
+      background: #292e38;
+      color: #d5d8dd;
+      font-size: 9px;
+      font-weight: 850;
+    }
+
+    .section-card .section-label {
+      flex: 1;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .section-status {
+      color: var(--quiet);
+      font-size: 9px;
+    }
+
+    .section-card[open] .section-chevron {
+      transform: rotate(180deg);
+    }
+
+    .section-chevron {
+      color: var(--quiet);
+      transition: transform .15s ease;
+    }
+
+    .section-content {
+      padding: 11px;
+    }
+
+    .section-media {
+      margin-top: 9px;
+      padding-top: 9px;
+      border-top: 1px solid #262b33;
+    }
+
+    .button-card {
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .button-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .button-card-head strong {
+      font-size: 10px;
     }
 
     .button-fields {
       display: grid;
-      grid-template-columns: minmax(120px,.5fr) minmax(0,1fr);
-      gap: 9px;
+      grid-template-columns: minmax(120px, .5fr) minmax(0, 1fr);
+      gap: 8px;
     }
 
-    .empty {
-      margin: 0;
-      padding: 15px;
-      border: 1px dashed #363d47;
-      border-radius: 9px;
-      color: var(--quiet);
-      font-size: 11px;
-      text-align: center;
+    .remove {
+      min-height: 30px;
+      padding: 5px 8px;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    .remove:hover {
+      border-color: rgba(255, 107, 110, .25);
+      background: rgba(255, 107, 110, .08);
     }
 
     .send-panel {
-      padding: 13px 15px;
+      padding: 12px 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
     }
 
-    .send-message {
+    .form-message {
       min-width: 0;
       margin: 0;
       color: var(--quiet);
-      font-size: 11px;
+      font-size: 10px;
     }
 
-    .send-message.success {
-      color: var(--green);
+    .form-message.success {
+      color: #57d681;
     }
 
-    .send-message.error {
+    .form-message.error {
       color: var(--danger);
     }
 
@@ -566,38 +837,39 @@
 
     .preview-panel {
       position: sticky;
-      top: 86px;
-      overflow: hidden;
-      box-shadow: 0 22px 60px rgba(0,0,0,.28);
+      top: 80px;
+      overflow: clip;
     }
 
-    .live {
-      display: inline-flex;
+    .preview-head {
+      min-height: 52px;
+      padding: 11px 14px;
+      display: flex;
       align-items: center;
-      gap: 6px;
-      color: var(--green);
-      font-size: 10px;
-      font-weight: 800;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid var(--line-soft);
     }
 
-    .live::before {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: currentColor;
-      content: "";
+    .preview-head strong {
+      font-size: 12px;
     }
 
-    .discord-canvas {
-      min-height: 430px;
-      padding: 20px 15px 24px;
+    .preview-head span {
+      color: var(--quiet);
+      font-size: 9px;
+    }
+
+    .discord-stage {
+      min-height: 410px;
+      padding: 18px 14px 22px;
       background: #1e1f22;
     }
 
     .discord-message {
       display: grid;
-      grid-template-columns: 38px minmax(0,1fr);
-      gap: 10px;
+      grid-template-columns: 38px minmax(0, 1fr);
+      gap: 9px;
     }
 
     .avatar {
@@ -606,13 +878,13 @@
       display: grid;
       place-items: center;
       border-radius: 50%;
-      background: #2b2d31;
+      background: #313338;
       color: white;
       font-size: 10px;
       font-weight: 900;
     }
 
-    .message-content {
+    .message-body {
       min-width: 0;
     }
 
@@ -620,92 +892,88 @@
       margin-bottom: 5px;
       display: flex;
       align-items: baseline;
-      gap: 6px;
+      gap: 5px;
       flex-wrap: wrap;
     }
 
-    .author {
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .app-badge {
-      padding: 1px 4px;
-      border-radius: 3px;
-      background: #5865f2;
-      font-size: 8px;
-      font-weight: 800;
-    }
-
-    .time {
-      color: #949ba4;
-      font-size: 9px;
-    }
-
-    .real-mention,
-    .inside-mention {
-      width: fit-content;
-      padding: 1px 4px;
-      border-radius: 3px;
-      background: rgba(88,101,242,.3);
-      color: #ccd0ff;
+    .message-meta strong {
       font-size: 12px;
     }
 
-    .real-mention {
-      margin-bottom: 6px;
+    .app-tag {
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: var(--blue);
+      font-size: 7px;
+      font-weight: 850;
     }
 
-    .inside-mention {
-      margin-bottom: 7px;
-      font-weight: 600;
+    .message-meta time {
+      color: #949ba4;
+      font-size: 8px;
     }
 
-    .discord-embed {
+    .component-container {
       overflow: hidden;
-      border: 1px solid #35383e;
-      border-left: 4px solid var(--embed-color,#ef4444);
+      border: 1px solid #393c43;
+      border-left: 4px solid var(--component-color, #ed4245);
       border-radius: 4px;
       background: #2b2d31;
     }
 
-    .banner-wrap {
+    .preview-banner {
       width: 100%;
-      aspect-ratio: 16/5.6;
+      aspect-ratio: 16 / 5.6;
       overflow: hidden;
-      background: #17191d;
+      background: #1a1b1f;
     }
 
-    .banner-wrap img,
-    .thumbnail-wrap img {
+    .preview-banner img {
       width: 100%;
       height: 100%;
       display: block;
       object-fit: cover;
     }
 
-    .embed-body {
+    .component-inner {
+      padding: 12px;
+    }
+
+    .ping-preview {
+      width: fit-content;
+      margin-bottom: 8px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: rgba(88, 101, 242, .32);
+      color: #d9dcff;
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .main-preview,
+    .preview-section {
       position: relative;
-      padding: 14px;
     }
 
-    .embed-copy.with-thumbnail {
-      min-height: 74px;
-      padding-right: 82px;
+    .main-preview.with-image,
+    .preview-section.with-image {
+      min-height: 66px;
+      padding-right: 76px;
     }
 
-    .embed-title {
+    .preview-title {
       margin: 0;
       color: #f2f3f5;
-      font-size: 14px;
-      line-height: 1.3;
+      font-size: 15px;
+      line-height: 1.25;
       overflow-wrap: anywhere;
     }
 
-    .embed-description {
-      margin: 6px 0 0;
+    .preview-description,
+    .preview-section p {
+      margin: 5px 0 0;
       color: #dbdee1;
-      font-size: 12px;
+      font-size: 11px;
       line-height: 1.45;
       overflow-wrap: anywhere;
       white-space: pre-wrap;
@@ -715,252 +983,148 @@
       color: #747b85 !important;
     }
 
-    .thumbnail-wrap {
+    .preview-thumbnail,
+    .section-thumbnail {
       position: absolute;
-      top: 14px;
-      right: 14px;
-      width: 68px;
-      height: 68px;
+      top: 0;
+      right: 0;
+      width: 64px;
+      height: 64px;
       overflow: hidden;
-      border-radius: 6px;
-      background: #17191d;
+      border-radius: 5px;
+      background: #1a1b1f;
     }
 
-    .preview-sections {
-      margin-top: 11px;
-      display: grid;
-    }
-
-    .preview-section {
-      padding: 10px 0;
-      border-top: 1px solid #45484e;
-    }
-
-    .preview-section:last-child {
-      padding-bottom: 0;
-    }
-
-    .preview-section strong {
+    .preview-thumbnail img,
+    .section-thumbnail img {
+      width: 100%;
+      height: 100%;
       display: block;
-      margin-bottom: 4px;
-      color: #b5bac1;
-      font-size: 9px;
-      letter-spacing: .05em;
-      text-transform: uppercase;
-      overflow-wrap: anywhere;
+      object-fit: cover;
+    }
+
+    .preview-separator {
+      height: 1px;
+      margin: 10px 0;
+      background: rgba(255, 255, 255, .12);
     }
 
     .preview-section p {
       margin: 0;
-      color: #dbdee1;
-      font-size: 12px;
-      line-height: 1.4;
-      overflow-wrap: anywhere;
-      white-space: pre-wrap;
     }
 
     .preview-buttons {
-      margin-top: 7px;
       display: flex;
       flex-wrap: wrap;
       gap: 5px;
     }
 
-    .discord-button {
-      min-height: 32px;
+    .preview-link {
+      min-height: 31px;
       max-width: 100%;
-      padding: 6px 10px;
+      padding: 6px 9px;
       display: inline-flex;
       align-items: center;
-      gap: 7px;
+      gap: 6px;
       border-radius: 3px;
       background: #4e5058;
       color: white;
-      font-size: 11px;
-      font-weight: 650;
+      font-size: 10px;
+      font-weight: 700;
       text-decoration: none;
     }
 
-    .discord-button span {
+    .preview-link span {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .discord-button::after {
-      flex: 0 0 auto;
-      color: #c7c9cc;
+    .preview-link::after {
+      color: #c9cbd0;
       content: "↗";
     }
 
     .payload {
       border-top: 1px solid var(--line-soft);
-      background: #111419;
+      background: #14171c;
     }
 
     .payload summary {
-      padding: 12px 15px;
-      color: #aeb3ba;
+      padding: 11px 14px;
+      color: var(--muted);
       cursor: pointer;
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 800;
     }
 
     .payload pre {
       max-height: 300px;
       margin: 0;
-      padding: 0 15px 15px;
+      padding: 0 14px 14px;
       overflow: auto;
-      color: #aeb7c3;
-      font: 10px/1.55 "SFMono-Regular", Consolas, monospace;
+      color: #abb3c0;
+      font: 9px/1.5 "SFMono-Regular", Consolas, monospace;
       white-space: pre-wrap;
       word-break: break-word;
     }
 
-    .favorites-panel {
-      margin-top: 22px;
-    }
-
-    .favorite-save {
-      display: grid;
-      grid-template-columns: minmax(150px,.4fr) minmax(0,1fr) auto;
-      gap: 8px;
-    }
-
-    .favorites-list {
-      margin-top: 13px;
-      display: grid;
-      grid-template-columns: repeat(3,minmax(0,1fr));
-      gap: 8px;
-    }
-
-    .favorite-item {
-      min-width: 0;
-      padding: 11px;
-      display: grid;
-      grid-template-columns: 22px minmax(0,1fr);
-      gap: 8px;
-      border: 1px solid var(--line-soft);
-      border-radius: 9px;
-      background: #13161a;
-    }
-
-    .favorite-item.active {
-      border-color: rgba(242,189,77,.55);
-      background: rgba(242,189,77,.04);
-    }
-
-    .star {
-      color: var(--yellow);
-      font-size: 17px;
-      line-height: 1;
-    }
-
-    .favorite-info {
-      min-width: 0;
-    }
-
-    .favorite-name,
-    .favorite-url {
-      margin: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .favorite-name {
-      font-size: 11px;
-      font-weight: 800;
-    }
-
-    .favorite-url {
-      margin-top: 3px;
-      color: var(--quiet);
-      font: 9px/1.3 "SFMono-Regular", Consolas, monospace;
-    }
-
-    .favorite-actions {
-      grid-column: 2;
-      display: flex;
-      gap: 5px;
-    }
-
-    .favorite-action {
-      min-height: 30px;
-      padding: 5px 7px;
-      border: 1px solid #3b424c;
-      border-radius: 5px;
-      background: #20242a;
-      color: #cfd3d8;
-      cursor: pointer;
-      font-size: 9px;
-      font-weight: 750;
-    }
-
-    .favorite-action.remove-action {
-      color: #ff8b8b;
-    }
-
-    .favorites-empty {
-      margin: 13px 0 0;
-      color: var(--quiet);
-      font-size: 11px;
-      text-align: center;
-    }
-
-    @media (max-width: 1120px) {
+    @media (max-width: 1060px) {
       .workspace {
-        grid-template-columns: minmax(0,1fr);
+        grid-template-columns: minmax(0, 1fr);
       }
 
       .preview-panel {
         position: static;
       }
 
-      .discord-canvas {
-        min-height: 350px;
-      }
-
-      .favorites-list {
-        grid-template-columns: repeat(2,minmax(0,1fr));
+      .discord-stage {
+        min-height: 340px;
       }
     }
 
-    @media (max-width: 700px) {
-      .topbar-inner,
+    @media (max-width: 680px) {
+      .appbar-inner,
       .page {
-        width: min(calc(100% - 20px),var(--max));
+        width: min(calc(100% - 16px), var(--max));
       }
 
       .page {
-        margin-top: 14px;
-        margin-bottom: 28px;
+        padding-top: 12px;
       }
 
       .workspace,
       .editor {
-        gap: 10px;
+        gap: 8px;
       }
 
-      .panel-head {
-        min-height: 52px;
-        padding: 12px;
+      .tool-panel > summary {
+        min-height: 54px;
+        padding: 10px 11px;
       }
 
-      .panel-body {
-        padding: 12px;
+      .tool-heading small {
+        display: none;
+      }
+
+      .tool-body {
+        padding: 11px;
       }
 
       .field-grid,
       .media-grid,
       .button-fields,
-      .favorite-save,
-      .favorites-list {
-        grid-template-columns: minmax(0,1fr);
+      .favorites-list,
+      .webhook-row {
+        grid-template-columns: minmax(0, 1fr);
       }
 
       .full {
         grid-column: auto;
+      }
+
+      .webhook-row .button {
+        width: 100%;
       }
 
       .send-panel {
@@ -976,166 +1140,179 @@
         flex: 1;
       }
 
+      .button,
+      .input,
+      .switch-row {
+        min-height: 44px;
+      }
+
       .remove,
-      .favorite-action {
+      .icon-button {
         min-height: 36px;
       }
 
-      .discord-canvas {
-        padding: 15px 9px 19px;
+      .discord-stage {
+        padding: 14px 9px 18px;
       }
 
       .discord-message {
-        grid-template-columns: 32px minmax(0,1fr);
+        grid-template-columns: 32px minmax(0, 1fr);
         gap: 7px;
       }
 
       .avatar {
         width: 32px;
         height: 32px;
-        font-size: 9px;
-      }
-
-      .favorites-panel {
-        margin-top: 10px;
+        font-size: 8px;
       }
     }
 
     @media (max-width: 390px) {
-      .topbar-inner,
-      .page {
-        width: min(calc(100% - 14px),var(--max));
-      }
-
-      .brand-copy span {
+      .brand small {
         display: none;
       }
 
-      .destination-state {
+      .connection {
         font-size: 0;
       }
 
-      .destination-state::before {
+      .connection::before {
         width: 10px;
         height: 10px;
       }
 
-      .panel-head {
-        align-items: flex-start;
+      .tool-count {
+        display: none;
       }
 
-      .panel-head > .button {
-        min-height: 33px;
-        padding: 6px 8px;
+      .main-preview.with-image,
+      .preview-section.with-image {
+        min-height: 58px;
+        padding-right: 66px;
       }
 
-      .media-actions .button,
-      .media-actions .file-picker {
-        flex: 1 1 auto;
-      }
-
-      .embed-copy.with-thumbnail {
-        min-height: 61px;
-        padding-right: 64px;
-      }
-
-      .thumbnail-wrap {
-        width: 54px;
-        height: 54px;
+      .preview-thumbnail,
+      .section-thumbnail {
+        width: 56px;
+        height: 56px;
       }
     }
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="topbar-inner">
+  <header class="appbar">
+    <div class="appbar-inner">
       <div class="brand">
-        <div class="brand-mark" aria-hidden="true">ES</div>
-        <div class="brand-copy">
-          <strong>Embed Studio</strong>
-          <span>Editor de webhooks para Discord</span>
+        <div class="brand-icon" aria-hidden="true">W</div>
+        <div>
+          <strong>Webhook Builder</strong>
+          <small>Crea mensajes para Discord</small>
         </div>
       </div>
-      <div class="destination-state" id="destination-state">Sin webhook</div>
+      <div class="connection" id="connection-state">Sin webhook</div>
     </div>
   </header>
 
   <main class="page">
     <div class="workspace">
-      <form class="editor" id="embed-form" novalidate>
-        <section class="panel" aria-labelledby="destination-heading">
-          <div class="panel-head">
-            <div class="panel-title">
-              <span class="step" aria-hidden="true">01</span>
-              <h2 id="destination-heading">Destino</h2>
-            </div>
-            <a class="button ghost" href="#favorites">★ Favoritas</a>
-          </div>
-          <div class="panel-body">
+      <form class="editor" id="builder-form" novalidate>
+        <details class="tool-panel" open>
+          <summary>
+            <span class="tool-number">1</span>
+            <span class="tool-heading">
+              <strong>Webhook</strong>
+              <small>Destino y favoritas</small>
+            </span>
+            <span class="chevron" aria-hidden="true">⌃</span>
+          </summary>
+          <div class="tool-body">
             <div class="field">
               <label for="webhook-url">URL de la webhook</label>
-              <input class="input" id="webhook-url" type="url" inputmode="url" autocomplete="off" placeholder="https://discord.com/api/webhooks/..." required>
-              <p class="helper">Solo se guarda si la añades a favoritas.</p>
+              <div class="webhook-row">
+                <input class="input" id="webhook-url" type="url" inputmode="url" autocomplete="off" placeholder="https://discord.com/api/webhooks/...">
+                <input class="input" id="favorite-name" maxlength="40" placeholder="Nombre para guardar" aria-label="Nombre de la favorita">
+                <button class="button" id="save-favorite" type="button">★ Guardar</button>
+              </div>
+              <p class="helper">La página comienza sin ninguna webhook guardada en el código.</p>
+            </div>
+            <div class="favorite-box">
+              <div class="favorite-head">
+                <strong>Favoritas</strong>
+                <span class="counter" id="favorites-count">0 guardadas</span>
+              </div>
+              <div class="favorites-list" id="favorites-list"></div>
+              <p class="empty-state" id="favorites-empty">Las webhooks que guardes aparecerán aquí.</p>
             </div>
           </div>
-        </section>
+        </details>
 
-        <section class="panel" aria-labelledby="embed-heading">
-          <div class="panel-head">
-            <div class="panel-title">
-              <span class="step" aria-hidden="true">02</span>
-              <h2 id="embed-heading">Embed</h2>
-            </div>
-            <span class="counter" id="title-count">0 / 256</span>
-          </div>
-          <div class="panel-body">
+        <details class="tool-panel" open>
+          <summary>
+            <span class="tool-number">2</span>
+            <span class="tool-heading">
+              <strong>Contenido</strong>
+              <small>Título, descripción y ping</small>
+            </span>
+            <span class="chevron" aria-hidden="true">⌃</span>
+          </summary>
+          <div class="tool-body">
             <div class="field-grid">
               <div class="field full">
-                <label for="embed-title">Título</label>
-                <input class="input" id="embed-title" maxlength="256" placeholder="Título del anuncio">
+                <div class="field-row">
+                  <label for="message-title">Título</label>
+                  <span class="counter" id="title-count">0 / 256</span>
+                </div>
+                <input class="input" id="message-title" maxlength="256" placeholder="Título del mensaje">
               </div>
               <div class="field full">
-                <div class="field-top">
-                  <label for="embed-description">Descripción</label>
+                <div class="field-row">
+                  <label for="message-description">Descripción</label>
                   <span class="counter" id="description-count">0 / 4000</span>
                 </div>
-                <textarea class="textarea" id="embed-description" maxlength="4000" placeholder="Escribe el contenido principal..."></textarea>
+                <textarea class="textarea" id="message-description" maxlength="4000" placeholder="Escribe el contenido principal..."></textarea>
               </div>
               <div class="field">
-                <label for="embed-color">Color lateral</label>
+                <span class="field-label">Color lateral</span>
                 <div class="color-control">
-                  <input id="embed-color" type="color" value="#ef4444" aria-label="Color del embed">
-                  <output id="color-value" for="embed-color">#EF4444</output>
+                  <input id="message-color" type="color" value="#ed4245" aria-label="Color lateral">
+                  <output id="color-value" for="message-color">#ED4245</output>
                 </div>
               </div>
               <div class="field">
-                <label for="mention-mode">@everyone</label>
-                <select class="select" id="mention-mode">
-                  <option value="inside" selected>Dentro del embed (sin aviso)</option>
-                  <option value="none">Sin @everyone</option>
-                  <option value="real">Ping real (aparece arriba)</option>
-                </select>
+                <span class="field-label">Notificación</span>
+                <label class="switch-row" for="ping-everyone">
+                  <span class="switch-copy">
+                    <strong>Ping @everyone</strong>
+                    <small>Aparece dentro del mensaje y notifica</small>
+                  </span>
+                  <span class="switch">
+                    <input id="ping-everyone" type="checkbox">
+                    <span aria-hidden="true"></span>
+                  </span>
+                </label>
               </div>
             </div>
           </div>
-        </section>
+        </details>
 
-        <section class="panel" aria-labelledby="media-heading">
-          <div class="panel-head">
-            <div class="panel-title">
-              <span class="step" aria-hidden="true">03</span>
-              <h2 id="media-heading">Imágenes y archivos</h2>
-            </div>
-          </div>
-          <div class="panel-body">
+        <details class="tool-panel">
+          <summary>
+            <span class="tool-number">3</span>
+            <span class="tool-heading">
+              <strong>Imágenes y archivos</strong>
+              <small>Banner, miniatura y adjuntos</small>
+            </span>
+            <span class="chevron" aria-hidden="true">⌃</span>
+          </summary>
+          <div class="tool-body">
             <div class="media-grid">
-              <div class="media-slot">
-                <div class="media-head">
+              <div class="media-card">
+                <div class="media-title">
                   <strong>Banner superior</strong>
                   <span class="optional">Opcional</span>
                 </div>
                 <div class="field">
-                  <label for="banner-url">URL</label>
+                  <label for="banner-url">URL de imagen</label>
                   <input class="input" id="banner-url" type="url" inputmode="url" placeholder="https://sitio.com/banner.png">
                 </div>
                 <div class="media-actions">
@@ -1144,17 +1321,16 @@
                     <input id="banner-file" type="file" accept="image/*">
                   </label>
                   <button class="button ghost" id="clear-banner" type="button">Quitar</button>
-                  <span class="file-status" id="banner-status">Sin archivo</span>
+                  <span class="file-state" id="banner-state">Sin archivo</span>
                 </div>
               </div>
-
-              <div class="media-slot">
-                <div class="media-head">
-                  <strong>Imagen pequeña</strong>
+              <div class="media-card">
+                <div class="media-title">
+                  <strong>Miniatura principal</strong>
                   <span class="optional">Opcional</span>
                 </div>
                 <div class="field">
-                  <label for="thumbnail-url">URL</label>
+                  <label for="thumbnail-url">URL de imagen</label>
                   <input class="input" id="thumbnail-url" type="url" inputmode="url" placeholder="https://sitio.com/icono.png">
                 </div>
                 <div class="media-actions">
@@ -1163,187 +1339,181 @@
                     <input id="thumbnail-file" type="file" accept="image/*">
                   </label>
                   <button class="button ghost" id="clear-thumbnail" type="button">Quitar</button>
-                  <span class="file-status" id="thumbnail-status">Sin archivo</span>
+                  <span class="file-state" id="thumbnail-state">Sin archivo</span>
                 </div>
               </div>
             </div>
-
             <div class="attachments">
-              <div class="attachments-head">
+              <div class="attachment-head">
                 <div>
-                  <span class="field-label">Archivos adjuntos</span>
-                  <p class="helper">Cualquier formato; hasta 10 contando imágenes locales.</p>
+                  <strong>Archivos adjuntos</strong>
+                  <p class="helper">Se mostrarán como archivos dentro del mensaje.</p>
                 </div>
                 <label class="button file-picker">
                   Adjuntar archivos
                   <input id="extra-files" type="file" multiple>
                 </label>
               </div>
-              <div class="attachment-list" id="attachment-list"></div>
+              <div class="file-list" id="file-list"></div>
             </div>
           </div>
-        </section>
+        </details>
 
-        <section class="panel" aria-labelledby="sections-heading">
-          <div class="panel-head">
-            <div class="panel-title">
-              <span class="step" aria-hidden="true">04</span>
-              <h2 id="sections-heading">Secciones</h2>
-              <span class="limit" id="sections-limit">0 / 25</span>
+        <details class="tool-panel">
+          <summary>
+            <span class="tool-number">4</span>
+            <span class="tool-heading">
+              <strong>Secciones</strong>
+              <small>Bloques de texto con imagen individual</small>
+            </span>
+            <span class="tool-count" id="sections-count">0 / 8</span>
+            <span class="chevron" aria-hidden="true">⌃</span>
+          </summary>
+          <div class="tool-body">
+            <div class="section-toolbar">
+              <p class="helper">No necesitan título. Cada una puede llevar su propia miniatura.</p>
+              <button class="button primary" id="add-section" type="button">＋ Añadir sección</button>
             </div>
-            <button class="button" id="add-section" type="button">＋ Añadir</button>
+            <div class="section-list" id="section-list"></div>
+            <p class="empty-state" id="sections-empty">No hay secciones añadidas.</p>
           </div>
-          <div class="panel-body">
-            <div class="block-list" id="sections-editor"></div>
-            <p class="empty" id="sections-empty">Añade una sección para separar información con una línea.</p>
-          </div>
-        </section>
+        </details>
 
-        <section class="panel" aria-labelledby="buttons-heading">
-          <div class="panel-head">
-            <div class="panel-title">
-              <span class="step" aria-hidden="true">05</span>
-              <h2 id="buttons-heading">Botones con enlace</h2>
-              <span class="limit" id="buttons-limit">0 / 25</span>
+        <details class="tool-panel">
+          <summary>
+            <span class="tool-number">5</span>
+            <span class="tool-heading">
+              <strong>Botones</strong>
+              <small>Enlaces grises bajo el contenido</small>
+            </span>
+            <span class="tool-count" id="buttons-count">0 / 25</span>
+            <span class="chevron" aria-hidden="true">⌃</span>
+          </summary>
+          <div class="tool-body">
+            <div class="section-toolbar">
+              <p class="helper">Discord agrupa hasta cinco botones por fila.</p>
+              <button class="button primary" id="add-button" type="button">＋ Añadir botón</button>
             </div>
-            <button class="button" id="add-button" type="button">＋ Añadir</button>
+            <div class="button-list" id="button-list"></div>
+            <p class="empty-state" id="buttons-empty">No hay botones añadidos.</p>
           </div>
-          <div class="panel-body">
-            <div class="block-list" id="buttons-editor"></div>
-            <p class="empty" id="buttons-empty">Los botones grises aparecerán debajo del embed.</p>
-          </div>
-        </section>
+        </details>
 
-        <section class="panel send-panel" aria-label="Enviar webhook">
-          <p class="send-message" id="form-message" role="status" aria-live="polite">Completa el embed y revisa la vista previa.</p>
+        <section class="send-panel" aria-label="Enviar mensaje">
+          <p class="form-message" id="form-message" role="status" aria-live="polite">La vista previa se actualiza automáticamente.</p>
           <div class="send-actions">
-            <button class="button ghost" id="clear-content" type="button">Limpiar</button>
-            <button class="button primary" id="send-button" type="submit">Enviar a Discord</button>
+            <button class="button ghost" id="clear-builder" type="button">Limpiar</button>
+            <button class="button send" id="send-button" type="submit">Enviar a Discord</button>
           </div>
         </section>
       </form>
 
-      <aside class="preview-column" aria-label="Vista previa">
-        <section class="panel preview-panel">
-          <div class="panel-head">
-            <div class="panel-title">
-              <h2>Vista previa</h2>
-            </div>
-            <span class="live">En vivo</span>
+      <aside class="preview-column">
+        <section class="preview-panel">
+          <div class="preview-head">
+            <strong>Vista previa</strong>
+            <span id="component-count">1 componente</span>
           </div>
-          <div class="discord-canvas">
+          <div class="discord-stage">
             <div class="discord-message">
               <div class="avatar" aria-hidden="true">WH</div>
-              <div class="message-content">
+              <div class="message-body">
                 <div class="message-meta">
-                  <span class="author">Webhook</span>
-                  <span class="app-badge">APP</span>
-                  <span class="time">ahora</span>
+                  <strong>Webhook</strong>
+                  <span class="app-tag">APP</span>
+                  <time>ahora</time>
                 </div>
-                <div class="real-mention" id="real-mention" hidden>@everyone</div>
-                <article class="discord-embed" id="embed-preview">
-                  <div class="banner-wrap" id="banner-wrap" hidden>
-                    <img id="banner-preview" alt="Vista previa del banner">
+                <article class="component-container" id="component-preview">
+                  <div class="preview-banner" id="preview-banner-wrap" hidden>
+                    <img id="preview-banner" alt="Banner del mensaje">
                   </div>
-                  <div class="embed-body">
-                    <div class="embed-copy" id="embed-copy">
-                      <div class="inside-mention" id="inside-mention">@everyone</div>
-                      <h3 class="embed-title placeholder" id="preview-title">Tu título aparecerá aquí</h3>
-                      <p class="embed-description placeholder" id="preview-description">La descripción y las secciones se verán aquí.</p>
+                  <div class="component-inner">
+                    <div class="ping-preview" id="preview-ping" hidden>@everyone</div>
+                    <div class="main-preview" id="main-preview">
+                      <h2 class="preview-title placeholder" id="preview-title">Título del mensaje</h2>
+                      <p class="preview-description placeholder" id="preview-description">La descripción aparecerá aquí.</p>
+                      <div class="preview-thumbnail" id="preview-thumbnail-wrap" hidden>
+                        <img id="preview-thumbnail" alt="Miniatura principal">
+                      </div>
                     </div>
-                    <div class="thumbnail-wrap" id="thumbnail-wrap" hidden>
-                      <img id="thumbnail-preview" alt="Vista previa de la imagen pequeña">
+                    <div id="preview-sections"></div>
+                    <div id="preview-buttons-area" hidden>
+                      <div class="preview-separator"></div>
+                      <div class="preview-buttons" id="preview-buttons"></div>
                     </div>
-                    <div class="preview-sections" id="preview-sections"></div>
+                    <div id="preview-files-area" hidden>
+                      <div class="preview-separator"></div>
+                      <div class="preview-files" id="preview-files"></div>
+                    </div>
                   </div>
                 </article>
-                <div class="preview-buttons" id="preview-buttons"></div>
-                <div class="preview-attachments" id="preview-attachments"></div>
               </div>
             </div>
           </div>
           <details class="payload">
-            <summary>Ver JSON del mensaje</summary>
+            <summary>Ver JSON</summary>
             <pre id="payload-preview"></pre>
           </details>
         </section>
       </aside>
     </div>
-
-    <section class="panel favorites-panel" id="favorites" aria-labelledby="favorites-heading">
-      <div class="panel-head">
-        <div class="panel-title">
-          <span class="star" aria-hidden="true">★</span>
-          <h2 id="favorites-heading">Webhooks favoritas</h2>
-          <span class="limit" id="favorites-count">0 guardadas</span>
-        </div>
-      </div>
-      <div class="panel-body">
-        <div class="favorite-save">
-          <input class="input" id="favorite-name" maxlength="40" placeholder="Nombre" aria-label="Nombre de la webhook favorita">
-          <input class="input" id="favorite-url" type="url" inputmode="url" autocomplete="off" placeholder="URL o webhook activa" aria-label="URL de la webhook favorita">
-          <button class="button" id="save-favorite" type="button">★ Guardar</button>
-        </div>
-        <div class="favorites-list" id="favorites-list" aria-live="polite"></div>
-        <p class="favorites-empty" id="favorites-empty">Aún no tienes webhooks favoritas.</p>
-      </div>
-    </section>
   </main>
 
   <script>
-    const favoritesStorageKey = "embed-dispatch-favorites";
-    const maxSections = 25;
+    const favoritesKey = "embed-dispatch-favorites";
+    const maxSections = 8;
     const maxButtons = 25;
     const maxFiles = 10;
-    const form = document.querySelector("#embed-form");
-    const webhookUrlInput = document.querySelector("#webhook-url");
-    const destinationState = document.querySelector("#destination-state");
-    const titleInput = document.querySelector("#embed-title");
-    const descriptionInput = document.querySelector("#embed-description");
-    const colorInput = document.querySelector("#embed-color");
-    const colorValue = document.querySelector("#color-value");
-    const mentionModeInput = document.querySelector("#mention-mode");
-    const titleCount = document.querySelector("#title-count");
-    const descriptionCount = document.querySelector("#description-count");
-    const bannerUrlInput = document.querySelector("#banner-url");
-    const bannerFileInput = document.querySelector("#banner-file");
-    const bannerStatus = document.querySelector("#banner-status");
-    const thumbnailUrlInput = document.querySelector("#thumbnail-url");
-    const thumbnailFileInput = document.querySelector("#thumbnail-file");
-    const thumbnailStatus = document.querySelector("#thumbnail-status");
-    const extraFilesInput = document.querySelector("#extra-files");
-    const attachmentList = document.querySelector("#attachment-list");
-    const sectionsEditor = document.querySelector("#sections-editor");
-    const sectionsEmpty = document.querySelector("#sections-empty");
-    const sectionsLimit = document.querySelector("#sections-limit");
-    const addSectionButton = document.querySelector("#add-section");
-    const buttonsEditor = document.querySelector("#buttons-editor");
-    const buttonsEmpty = document.querySelector("#buttons-empty");
-    const buttonsLimit = document.querySelector("#buttons-limit");
-    const addButtonButton = document.querySelector("#add-button");
-    const clearContentButton = document.querySelector("#clear-content");
-    const sendButton = document.querySelector("#send-button");
-    const formMessage = document.querySelector("#form-message");
-    const embedPreview = document.querySelector("#embed-preview");
-    const previewTitle = document.querySelector("#preview-title");
-    const previewDescription = document.querySelector("#preview-description");
-    const insideMention = document.querySelector("#inside-mention");
-    const realMention = document.querySelector("#real-mention");
-    const embedCopy = document.querySelector("#embed-copy");
-    const bannerWrap = document.querySelector("#banner-wrap");
-    const bannerPreview = document.querySelector("#banner-preview");
-    const thumbnailWrap = document.querySelector("#thumbnail-wrap");
-    const thumbnailPreview = document.querySelector("#thumbnail-preview");
-    const previewSections = document.querySelector("#preview-sections");
-    const previewButtons = document.querySelector("#preview-buttons");
-    const previewAttachments = document.querySelector("#preview-attachments");
-    const payloadPreview = document.querySelector("#payload-preview");
-    const favoriteNameInput = document.querySelector("#favorite-name");
-    const favoriteUrlInput = document.querySelector("#favorite-url");
+    const form = document.querySelector("#builder-form");
+    const webhookUrl = document.querySelector("#webhook-url");
+    const favoriteName = document.querySelector("#favorite-name");
     const saveFavoriteButton = document.querySelector("#save-favorite");
-    const favoritesCount = document.querySelector("#favorites-count");
     const favoritesList = document.querySelector("#favorites-list");
     const favoritesEmpty = document.querySelector("#favorites-empty");
+    const favoritesCount = document.querySelector("#favorites-count");
+    const connectionState = document.querySelector("#connection-state");
+    const titleInput = document.querySelector("#message-title");
+    const descriptionInput = document.querySelector("#message-description");
+    const colorInput = document.querySelector("#message-color");
+    const pingInput = document.querySelector("#ping-everyone");
+    const titleCount = document.querySelector("#title-count");
+    const descriptionCount = document.querySelector("#description-count");
+    const colorValue = document.querySelector("#color-value");
+    const bannerUrl = document.querySelector("#banner-url");
+    const bannerFile = document.querySelector("#banner-file");
+    const bannerState = document.querySelector("#banner-state");
+    const thumbnailUrl = document.querySelector("#thumbnail-url");
+    const thumbnailFile = document.querySelector("#thumbnail-file");
+    const thumbnailState = document.querySelector("#thumbnail-state");
+    const extraFiles = document.querySelector("#extra-files");
+    const fileList = document.querySelector("#file-list");
+    const sectionList = document.querySelector("#section-list");
+    const sectionsEmpty = document.querySelector("#sections-empty");
+    const sectionsCount = document.querySelector("#sections-count");
+    const addSectionButton = document.querySelector("#add-section");
+    const buttonList = document.querySelector("#button-list");
+    const buttonsEmpty = document.querySelector("#buttons-empty");
+    const buttonsCount = document.querySelector("#buttons-count");
+    const addButtonButton = document.querySelector("#add-button");
+    const clearBuilderButton = document.querySelector("#clear-builder");
+    const sendButton = document.querySelector("#send-button");
+    const formMessage = document.querySelector("#form-message");
+    const componentPreview = document.querySelector("#component-preview");
+    const previewBannerWrap = document.querySelector("#preview-banner-wrap");
+    const previewBanner = document.querySelector("#preview-banner");
+    const previewPing = document.querySelector("#preview-ping");
+    const mainPreview = document.querySelector("#main-preview");
+    const previewTitle = document.querySelector("#preview-title");
+    const previewDescription = document.querySelector("#preview-description");
+    const previewThumbnailWrap = document.querySelector("#preview-thumbnail-wrap");
+    const previewThumbnail = document.querySelector("#preview-thumbnail");
+    const previewSections = document.querySelector("#preview-sections");
+    const previewButtonsArea = document.querySelector("#preview-buttons-area");
+    const previewButtons = document.querySelector("#preview-buttons");
+    const previewFilesArea = document.querySelector("#preview-files-area");
+    const previewFiles = document.querySelector("#preview-files");
+    const payloadPreview = document.querySelector("#payload-preview");
+    const componentCount = document.querySelector("#component-count");
     let sections = [];
     let linkButtons = [];
     let nextSectionId = 1;
@@ -1361,7 +1531,7 @@
       }
     }
 
-    function isValidWebhookUrl(value) {
+    function isWebhookUrl(value) {
       try {
         const url = new URL(value);
         const hosts = ["discord.com", "discordapp.com", "ptb.discord.com", "canary.discord.com"];
@@ -1371,13 +1541,19 @@
       }
     }
 
+    function setMessage(text, type) {
+      formMessage.textContent = text;
+      formMessage.className = "form-message" + (type ? " " + type : "");
+    }
+
     function loadFavorites() {
       try {
-        const saved = JSON.parse(localStorage.getItem(favoritesStorageKey) || "[]");
-        if (!Array.isArray(saved)) {
-          return [];
-        }
-        return saved.filter((favorite) => favorite && typeof favorite.name === "string" && typeof favorite.url === "string" && isValidWebhookUrl(favorite.url)).slice(0, 30);
+        const saved = JSON.parse(localStorage.getItem(favoritesKey) || "[]");
+        return Array.isArray(saved)
+          ? saved.filter(function (item) {
+              return item && typeof item.name === "string" && typeof item.url === "string" && isWebhookUrl(item.url);
+            }).slice(0, 30)
+          : [];
       } catch (error) {
         return [];
       }
@@ -1385,127 +1561,118 @@
 
     function storeFavorites() {
       try {
-        localStorage.setItem(favoritesStorageKey, JSON.stringify(favorites));
+        localStorage.setItem(favoritesKey, JSON.stringify(favorites));
         return true;
       } catch (error) {
         return false;
       }
     }
 
-    function maskWebhookUrl(value) {
+    function maskWebhook(value) {
       try {
         const url = new URL(value);
         const parts = url.pathname.split("/");
-        return `${url.origin}/api/webhooks/${parts[3] || "webhook"}/••••••`;
+        return url.origin + "/api/webhooks/" + (parts[3] || "webhook") + "/••••••";
       } catch (error) {
         return "Webhook de Discord";
       }
     }
 
-    function setMessage(message, type = "") {
-      formMessage.textContent = message;
-      formMessage.className = `send-message${type ? ` ${type}` : ""}`;
-    }
-
-    function updateDestinationState() {
-      const value = webhookUrlInput.value.trim();
-      destinationState.className = "destination-state";
+    function updateConnection() {
+      const value = webhookUrl.value.trim();
+      connectionState.className = "connection";
       if (!value) {
-        destinationState.textContent = "Sin webhook";
-      } else if (isValidWebhookUrl(value)) {
-        destinationState.textContent = "Destino listo";
-        destinationState.classList.add("ready");
+        connectionState.textContent = "Sin webhook";
+      } else if (isWebhookUrl(value)) {
+        connectionState.textContent = "Webhook lista";
+        connectionState.classList.add("ready");
       } else {
-        destinationState.textContent = "URL inválida";
-        destinationState.classList.add("invalid");
+        connectionState.textContent = "URL inválida";
+        connectionState.classList.add("invalid");
       }
       renderFavorites();
     }
 
     function renderFavorites() {
       favoritesList.textContent = "";
-      favoritesCount.textContent = `${favorites.length} ${favorites.length === 1 ? "guardada" : "guardadas"}`;
+      favoritesCount.textContent = favorites.length + " " + (favorites.length === 1 ? "guardada" : "guardadas");
       favoritesEmpty.hidden = favorites.length > 0;
-      const activeUrl = webhookUrlInput.value.trim();
+      const active = webhookUrl.value.trim();
 
-      favorites.forEach((favorite) => {
+      favorites.forEach(function (favorite) {
         const item = document.createElement("article");
-        item.className = `favorite-item${favorite.url === activeUrl ? " active" : ""}`;
+        item.className = "favorite-item" + (favorite.url === active ? " active" : "");
         const star = document.createElement("span");
         star.className = "star";
-        star.setAttribute("aria-hidden", "true");
         star.textContent = "★";
-        const info = document.createElement("div");
-        info.className = "favorite-info";
-        const name = document.createElement("p");
-        name.className = "favorite-name";
+        star.setAttribute("aria-hidden", "true");
+        const copy = document.createElement("div");
+        copy.className = "favorite-copy";
+        const name = document.createElement("strong");
         name.textContent = favorite.name;
-        const url = document.createElement("p");
-        url.className = "favorite-url";
-        url.title = "Token oculto por seguridad";
-        url.textContent = maskWebhookUrl(favorite.url);
+        const url = document.createElement("small");
+        url.textContent = maskWebhook(favorite.url);
+        copy.append(name, url);
         const actions = document.createElement("div");
         actions.className = "favorite-actions";
         const use = document.createElement("button");
         use.type = "button";
-        use.className = "favorite-action";
-        use.textContent = "Usar";
-        use.addEventListener("click", () => {
-          webhookUrlInput.value = favorite.url;
-          updateDestinationState();
+        use.className = "icon-button";
+        use.title = "Usar webhook";
+        use.setAttribute("aria-label", "Usar " + favorite.name);
+        use.textContent = "↗";
+        use.addEventListener("click", function () {
+          webhookUrl.value = favorite.url;
+          updateConnection();
           setMessage("Webhook favorita cargada.", "success");
-          webhookUrlInput.scrollIntoView({ behavior: "smooth", block: "center" });
         });
         const remove = document.createElement("button");
         remove.type = "button";
-        remove.className = "favorite-action remove-action";
-        remove.textContent = "Eliminar";
-        remove.addEventListener("click", () => {
-          const previous = [...favorites];
-          favorites = favorites.filter((itemValue) => itemValue.url !== favorite.url);
-          if (!storeFavorites()) {
-            favorites = previous;
-            setMessage("No se pudo actualizar favoritas.", "error");
-          } else {
-            setMessage(`Favorita "${favorite.name}" eliminada.`, "success");
-          }
+        remove.className = "icon-button danger";
+        remove.title = "Eliminar favorita";
+        remove.setAttribute("aria-label", "Eliminar " + favorite.name);
+        remove.textContent = "×";
+        remove.addEventListener("click", function () {
+          favorites = favorites.filter(function (itemValue) {
+            return itemValue.url !== favorite.url;
+          });
+          storeFavorites();
           renderFavorites();
+          setMessage("Favorita eliminada.", "success");
         });
-        info.append(name, url);
         actions.append(use, remove);
-        item.append(star, info, actions);
+        item.append(star, copy, actions);
         favoritesList.append(item);
       });
     }
 
     function saveFavorite() {
-      const name = favoriteNameInput.value.trim();
-      const url = favoriteUrlInput.value.trim() || webhookUrlInput.value.trim();
+      const name = favoriteName.value.trim();
+      const url = webhookUrl.value.trim();
+      if (!isWebhookUrl(url)) {
+        webhookUrl.focus();
+        setMessage("Escribe una webhook válida antes de guardarla.", "error");
+        return;
+      }
       if (!name) {
-        favoriteNameInput.focus();
+        favoriteName.focus();
         setMessage("Escribe un nombre para la favorita.", "error");
         return;
       }
-      if (!isValidWebhookUrl(url)) {
-        favoriteUrlInput.focus();
-        setMessage("La URL no es una webhook válida de Discord.", "error");
-        return;
-      }
-      const previous = [...favorites];
-      const existing = favorites.findIndex((favorite) => favorite.url === url);
+      const existing = favorites.findIndex(function (item) {
+        return item.url === url;
+      });
       if (existing >= 0) {
-        favorites[existing] = { name, url };
+        favorites[existing] = { name: name, url: url };
       } else {
-        favorites.unshift({ name, url });
+        favorites.unshift({ name: name, url: url });
         favorites = favorites.slice(0, 30);
       }
       if (!storeFavorites()) {
-        favorites = previous;
-        setMessage("No se pudo guardar la favorita.", "error");
+        setMessage("El navegador no pudo guardar la favorita.", "error");
         return;
       }
-      favoriteNameInput.value = "";
-      favoriteUrlInput.value = "";
+      favoriteName.value = "";
       renderFavorites();
       setMessage("Webhook guardada en favoritas.", "success");
     }
@@ -1516,340 +1683,477 @@
     }
 
     function attachmentName(kind, file) {
-      return `${kind}-${safeFileName(file.name)}`;
+      return kind + "-" + safeFileName(file.name);
     }
 
     function formatBytes(bytes) {
       if (bytes < 1024) {
-        return `${bytes} B`;
+        return bytes + " B";
       }
       if (bytes < 1048576) {
-        return `${(bytes / 1024).toFixed(1)} KB`;
+        return (bytes / 1024).toFixed(1) + " KB";
       }
-      return `${(bytes / 1048576).toFixed(1)} MB`;
-    }
-
-    function syncMediaFile(kind) {
-      const isBanner = kind === "banner";
-      const input = isBanner ? bannerFileInput : thumbnailFileInput;
-      const status = isBanner ? bannerStatus : thumbnailStatus;
-      const oldUrl = isBanner ? bannerObjectUrl : thumbnailObjectUrl;
-      if (oldUrl) {
-        URL.revokeObjectURL(oldUrl);
-      }
-      const file = input.files[0];
-      const newUrl = file ? URL.createObjectURL(file) : "";
-      if (isBanner) {
-        bannerObjectUrl = newUrl;
-      } else {
-        thumbnailObjectUrl = newUrl;
-      }
-      status.textContent = file ? file.name : "Sin archivo";
-      renderAttachments();
-      updatePreview();
-    }
-
-    function clearMediaFile(kind) {
-      const input = kind === "banner" ? bannerFileInput : thumbnailFileInput;
-      input.value = "";
-      syncMediaFile(kind);
-    }
-
-    function getMediaPayload(kind) {
-      const isBanner = kind === "banner";
-      const input = isBanner ? bannerFileInput : thumbnailFileInput;
-      const urlInput = isBanner ? bannerUrlInput : thumbnailUrlInput;
-      const file = input.files[0];
-      const rawUrl = urlInput.value.trim();
-      if (file) {
-        return { url: `attachment://${attachmentName(kind, file)}` };
-      }
-      return isHttpUrl(rawUrl) ? { url: rawUrl } : null;
-    }
-
-    function getMediaPreviewUrl(kind) {
-      const isBanner = kind === "banner";
-      const file = (isBanner ? bannerFileInput : thumbnailFileInput).files[0];
-      if (file) {
-        return isBanner ? bannerObjectUrl : thumbnailObjectUrl;
-      }
-      const rawUrl = (isBanner ? bannerUrlInput : thumbnailUrlInput).value.trim();
-      return isHttpUrl(rawUrl) ? rawUrl : "";
-    }
-
-    function getUploads() {
-      const uploads = [];
-      const bannerFile = bannerFileInput.files[0];
-      const thumbnailFile = thumbnailFileInput.files[0];
-      if (bannerFile) {
-        uploads.push({ file: bannerFile, name: attachmentName("banner", bannerFile) });
-      }
-      if (thumbnailFile) {
-        uploads.push({ file: thumbnailFile, name: attachmentName("thumbnail", thumbnailFile) });
-      }
-      Array.from(extraFilesInput.files).forEach((file, index) => {
-        uploads.push({ file, name: `archivo-${index + 1}-${safeFileName(file.name)}` });
-      });
-      return uploads;
+      return (bytes / 1048576).toFixed(1) + " MB";
     }
 
     function createFileChip(file) {
       const chip = document.createElement("span");
       chip.className = "file-chip";
       const icon = document.createElement("span");
-      icon.setAttribute("aria-hidden", "true");
       icon.textContent = "▣";
+      icon.setAttribute("aria-hidden", "true");
       const text = document.createElement("span");
-      text.textContent = `${file.name} · ${formatBytes(file.size)}`;
+      text.textContent = file.name + " · " + formatBytes(file.size);
       chip.append(icon, text);
       return chip;
     }
 
-    function renderAttachments() {
-      attachmentList.textContent = "";
-      const files = Array.from(extraFilesInput.files);
+    function renderExtraFiles() {
+      fileList.textContent = "";
+      const files = Array.from(extraFiles.files);
       if (!files.length) {
         const empty = document.createElement("span");
         empty.className = "helper";
-        empty.textContent = "Sin archivos extra";
-        attachmentList.append(empty);
-        return;
+        empty.textContent = "Sin archivos adjuntos";
+        fileList.append(empty);
+      } else {
+        files.forEach(function (file) {
+          fileList.append(createFileChip(file));
+        });
       }
-      files.forEach((file) => attachmentList.append(createFileChip(file)));
+    }
+
+    function syncMainMedia(kind) {
+      const isBanner = kind === "banner";
+      const input = isBanner ? bannerFile : thumbnailFile;
+      const state = isBanner ? bannerState : thumbnailState;
+      const oldUrl = isBanner ? bannerObjectUrl : thumbnailObjectUrl;
+      if (oldUrl) {
+        URL.revokeObjectURL(oldUrl);
+      }
+      const file = input.files[0];
+      const nextUrl = file ? URL.createObjectURL(file) : "";
+      if (isBanner) {
+        bannerObjectUrl = nextUrl;
+      } else {
+        thumbnailObjectUrl = nextUrl;
+      }
+      state.textContent = file ? file.name : "Sin archivo";
+      updatePreview();
+    }
+
+    function clearMainMedia(kind) {
+      const input = kind === "banner" ? bannerFile : thumbnailFile;
+      input.value = "";
+      syncMainMedia(kind);
+    }
+
+    function mainMediaPayload(kind) {
+      const isBanner = kind === "banner";
+      const file = (isBanner ? bannerFile : thumbnailFile).files[0];
+      const rawUrl = (isBanner ? bannerUrl : thumbnailUrl).value.trim();
+      if (file) {
+        return { url: "attachment://" + attachmentName(kind, file) };
+      }
+      return isHttpUrl(rawUrl) ? { url: rawUrl } : null;
+    }
+
+    function mainMediaPreview(kind) {
+      const isBanner = kind === "banner";
+      const file = (isBanner ? bannerFile : thumbnailFile).files[0];
+      if (file) {
+        return isBanner ? bannerObjectUrl : thumbnailObjectUrl;
+      }
+      const rawUrl = (isBanner ? bannerUrl : thumbnailUrl).value.trim();
+      return isHttpUrl(rawUrl) ? rawUrl : "";
     }
 
     function addSection() {
       if (sections.length >= maxSections) {
-        setMessage("Discord admite hasta 25 secciones por embed.", "error");
+        setMessage("Puedes añadir hasta " + maxSections + " secciones.", "error");
         return;
       }
-      sections.push({ id: nextSectionId++, title: "", body: "" });
+      sections.push({
+        id: nextSectionId++,
+        body: "",
+        imageUrl: "",
+        file: null,
+        previewUrl: "",
+        open: true
+      });
       renderSectionsEditor();
-      sectionsEditor.querySelector(".editor-block:last-child input")?.focus();
+      updatePreview();
+    }
+
+    function clearSectionFile(section) {
+      if (section.previewUrl) {
+        URL.revokeObjectURL(section.previewUrl);
+      }
+      section.file = null;
+      section.previewUrl = "";
+      renderSectionsEditor();
+      updatePreview();
+    }
+
+    function removeSection(section) {
+      if (section.previewUrl) {
+        URL.revokeObjectURL(section.previewUrl);
+      }
+      sections = sections.filter(function (item) {
+        return item.id !== section.id;
+      });
+      renderSectionsEditor();
+      updatePreview();
     }
 
     function renderSectionsEditor() {
-      sectionsEditor.textContent = "";
+      sectionList.textContent = "";
       sectionsEmpty.hidden = sections.length > 0;
-      sectionsLimit.textContent = `${sections.length} / ${maxSections}`;
+      sectionsCount.textContent = sections.length + " / " + maxSections;
       addSectionButton.disabled = sections.length >= maxSections;
 
-      sections.forEach((section, index) => {
-        const block = document.createElement("div");
-        block.className = "editor-block";
-        const head = document.createElement("div");
-        head.className = "block-head";
-        const blockName = document.createElement("strong");
-        blockName.textContent = `Sección ${index + 1}`;
+      sections.forEach(function (section, index) {
+        const card = document.createElement("details");
+        card.className = "section-card";
+        card.open = section.open;
+        card.addEventListener("toggle", function () {
+          section.open = card.open;
+        });
+        const summary = document.createElement("summary");
+        const number = document.createElement("span");
+        number.className = "section-index";
+        number.textContent = String(index + 1);
+        const label = document.createElement("span");
+        label.className = "section-label";
+        label.textContent = "Sección " + (index + 1);
+        const status = document.createElement("span");
+        status.className = "section-status";
+        status.textContent = section.file || isHttpUrl(section.imageUrl) ? "Con imagen" : "Sin imagen";
         const remove = document.createElement("button");
         remove.type = "button";
         remove.className = "remove";
         remove.textContent = "Quitar";
-        remove.addEventListener("click", () => {
-          sections = sections.filter((item) => item.id !== section.id);
-          renderSectionsEditor();
-          updatePreview();
+        remove.addEventListener("click", function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          removeSection(section);
         });
-        head.append(blockName, remove);
+        const chevron = document.createElement("span");
+        chevron.className = "section-chevron";
+        chevron.textContent = "⌃";
+        summary.append(number, label, status, remove, chevron);
 
-        const titleField = document.createElement("div");
-        titleField.className = "field";
-        const titleLabel = document.createElement("label");
-        titleLabel.htmlFor = `section-title-${section.id}`;
-        titleLabel.textContent = "Nombre";
-        const title = document.createElement("input");
-        title.className = "input";
-        title.id = `section-title-${section.id}`;
-        title.maxLength = 220;
-        title.placeholder = "INFORMACIÓN";
-        title.value = section.title;
-        title.addEventListener("input", () => {
-          section.title = title.value;
-          updatePreview();
-        });
-        titleField.append(titleLabel, title);
-
+        const content = document.createElement("div");
+        content.className = "section-content";
         const bodyField = document.createElement("div");
         bodyField.className = "field";
         const bodyLabel = document.createElement("label");
-        bodyLabel.htmlFor = `section-body-${section.id}`;
+        bodyLabel.htmlFor = "section-body-" + section.id;
         bodyLabel.textContent = "Contenido";
         const body = document.createElement("textarea");
         body.className = "textarea";
-        body.id = `section-body-${section.id}`;
-        body.maxLength = 1000;
-        body.placeholder = "Añade líneas, datos o cambios...";
+        body.id = "section-body-" + section.id;
+        body.maxLength = 4000;
+        body.placeholder = "Escribe la información de esta sección...";
         body.value = section.body;
-        body.addEventListener("input", () => {
+        body.addEventListener("input", function () {
           section.body = body.value;
           updatePreview();
         });
         bodyField.append(bodyLabel, body);
-        block.append(head, titleField, bodyField);
-        sectionsEditor.append(block);
+
+        const media = document.createElement("div");
+        media.className = "section-media";
+        const mediaField = document.createElement("div");
+        mediaField.className = "field";
+        const mediaLabel = document.createElement("label");
+        mediaLabel.htmlFor = "section-image-" + section.id;
+        mediaLabel.textContent = "Imagen pequeña opcional";
+        const imageUrl = document.createElement("input");
+        imageUrl.className = "input";
+        imageUrl.id = "section-image-" + section.id;
+        imageUrl.type = "url";
+        imageUrl.inputMode = "url";
+        imageUrl.placeholder = "https://sitio.com/icono.png";
+        imageUrl.value = section.imageUrl;
+        imageUrl.addEventListener("input", function () {
+          section.imageUrl = imageUrl.value;
+          updatePreview();
+        });
+        mediaField.append(mediaLabel, imageUrl);
+
+        const actions = document.createElement("div");
+        actions.className = "media-actions";
+        const picker = document.createElement("label");
+        picker.className = "button file-picker";
+        picker.textContent = "Elegir de galería";
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = "image/*";
+        fileInput.addEventListener("change", function () {
+          if (section.previewUrl) {
+            URL.revokeObjectURL(section.previewUrl);
+          }
+          section.file = fileInput.files[0] || null;
+          section.previewUrl = section.file ? URL.createObjectURL(section.file) : "";
+          renderSectionsEditor();
+          updatePreview();
+        });
+        picker.append(fileInput);
+        const clear = document.createElement("button");
+        clear.type = "button";
+        clear.className = "button ghost";
+        clear.textContent = "Quitar imagen";
+        clear.addEventListener("click", function () {
+          clearSectionFile(section);
+        });
+        const fileState = document.createElement("span");
+        fileState.className = "file-state";
+        fileState.textContent = section.file ? section.file.name : "Sin archivo";
+        actions.append(picker, clear, fileState);
+        media.append(mediaField, actions);
+        content.append(bodyField, media);
+        card.append(summary, content);
+        sectionList.append(card);
       });
     }
 
     function addLinkButton() {
       if (linkButtons.length >= maxButtons) {
-        setMessage("Discord admite hasta 25 botones por mensaje.", "error");
+        setMessage("Puedes añadir hasta " + maxButtons + " botones.", "error");
         return;
       }
       linkButtons.push({ id: nextButtonId++, label: "", url: "" });
       renderButtonsEditor();
-      buttonsEditor.querySelector(".editor-block:last-child input")?.focus();
+      updatePreview();
     }
 
     function renderButtonsEditor() {
-      buttonsEditor.textContent = "";
+      buttonList.textContent = "";
       buttonsEmpty.hidden = linkButtons.length > 0;
-      buttonsLimit.textContent = `${linkButtons.length} / ${maxButtons}`;
+      buttonsCount.textContent = linkButtons.length + " / " + maxButtons;
       addButtonButton.disabled = linkButtons.length >= maxButtons;
 
-      linkButtons.forEach((linkButton, index) => {
-        const block = document.createElement("div");
-        block.className = "editor-block";
+      linkButtons.forEach(function (linkButton, index) {
+        const card = document.createElement("div");
+        card.className = "button-card";
         const head = document.createElement("div");
-        head.className = "block-head";
-        const blockName = document.createElement("strong");
-        blockName.textContent = `Botón ${index + 1}`;
+        head.className = "button-card-head";
+        const name = document.createElement("strong");
+        name.textContent = "Botón " + (index + 1);
         const remove = document.createElement("button");
         remove.type = "button";
         remove.className = "remove";
         remove.textContent = "Quitar";
-        remove.addEventListener("click", () => {
-          linkButtons = linkButtons.filter((item) => item.id !== linkButton.id);
+        remove.addEventListener("click", function () {
+          linkButtons = linkButtons.filter(function (item) {
+            return item.id !== linkButton.id;
+          });
           renderButtonsEditor();
           updatePreview();
         });
-        head.append(blockName, remove);
-
+        head.append(name, remove);
         const fields = document.createElement("div");
         fields.className = "button-fields";
         const labelField = document.createElement("div");
         labelField.className = "field";
         const labelLabel = document.createElement("label");
-        labelLabel.htmlFor = `button-label-${linkButton.id}`;
+        labelLabel.htmlFor = "button-label-" + linkButton.id;
         labelLabel.textContent = "Texto";
-        const label = document.createElement("input");
-        label.className = "input";
-        label.id = `button-label-${linkButton.id}`;
-        label.maxLength = 80;
-        label.placeholder = "Abrir enlace";
-        label.value = linkButton.label;
-        label.addEventListener("input", () => {
-          linkButton.label = label.value;
+        const labelInput = document.createElement("input");
+        labelInput.className = "input";
+        labelInput.id = "button-label-" + linkButton.id;
+        labelInput.maxLength = 80;
+        labelInput.placeholder = "Abrir enlace";
+        labelInput.value = linkButton.label;
+        labelInput.addEventListener("input", function () {
+          linkButton.label = labelInput.value;
           updatePreview();
         });
-        labelField.append(labelLabel, label);
-
+        labelField.append(labelLabel, labelInput);
         const urlField = document.createElement("div");
         urlField.className = "field";
         const urlLabel = document.createElement("label");
-        urlLabel.htmlFor = `button-url-${linkButton.id}`;
-        urlLabel.textContent = "Enlace";
-        const url = document.createElement("input");
-        url.className = "input";
-        url.id = `button-url-${linkButton.id}`;
-        url.type = "url";
-        url.inputMode = "url";
-        url.maxLength = 512;
-        url.placeholder = "https://sitio.com";
-        url.value = linkButton.url;
-        url.addEventListener("input", () => {
-          linkButton.url = url.value;
+        urlLabel.htmlFor = "button-url-" + linkButton.id;
+        urlLabel.textContent = "URL";
+        const urlInput = document.createElement("input");
+        urlInput.className = "input";
+        urlInput.id = "button-url-" + linkButton.id;
+        urlInput.type = "url";
+        urlInput.inputMode = "url";
+        urlInput.maxLength = 512;
+        urlInput.placeholder = "https://sitio.com";
+        urlInput.value = linkButton.url;
+        urlInput.addEventListener("input", function () {
+          linkButton.url = urlInput.value;
           updatePreview();
         });
-        urlField.append(urlLabel, url);
+        urlField.append(urlLabel, urlInput);
         fields.append(labelField, urlField);
-        block.append(head, fields);
-        buttonsEditor.append(block);
+        card.append(head, fields);
+        buttonList.append(card);
       });
     }
 
+    function sectionMediaPayload(section) {
+      if (section.file) {
+        return { url: "attachment://section-" + section.id + "-" + safeFileName(section.file.name) };
+      }
+      return isHttpUrl(section.imageUrl.trim()) ? { url: section.imageUrl.trim() } : null;
+    }
+
+    function sectionMediaPreview(section) {
+      if (section.file) {
+        return section.previewUrl;
+      }
+      return isHttpUrl(section.imageUrl.trim()) ? section.imageUrl.trim() : "";
+    }
+
     function cleanSections() {
-      return sections
-        .filter((section) => section.title.trim() || section.body.trim())
-        .map((section) => ({
-          title: section.title.trim() || "Sección",
-          body: section.body.trim() || "\u200B"
-        }));
+      return sections.filter(function (section) {
+        return section.body.trim() || sectionMediaPayload(section);
+      });
     }
 
     function cleanButtons() {
-      return linkButtons
-        .filter((linkButton) => linkButton.label.trim() && isHttpUrl(linkButton.url.trim()))
-        .map((linkButton) => ({
-          label: linkButton.label.trim(),
-          url: linkButton.url.trim()
-        }));
+      return linkButtons.filter(function (linkButton) {
+        return linkButton.label.trim() && isHttpUrl(linkButton.url.trim());
+      });
     }
 
-    function buildComponents() {
-      const validButtons = cleanButtons();
-      const rows = [];
-      for (let index = 0; index < validButtons.length; index += 5) {
-        rows.push({
-          type: 1,
-          components: validButtons.slice(index, index + 5).map((linkButton) => ({
-            type: 2,
-            style: 5,
-            label: linkButton.label,
-            url: linkButton.url
-          }))
+    function buildContainerChildren() {
+      const children = [];
+      const banner = mainMediaPayload("banner");
+      const thumbnail = mainMediaPayload("thumbnail");
+      const title = titleInput.value.trim();
+      const description = descriptionInput.value.trim();
+      const mainText = (title ? "# " + title : "") + (title && description ? "\n" : "") + description;
+
+      if (banner) {
+        children.push({
+          type: 12,
+          items: [{ media: banner, description: "Banner superior" }]
         });
       }
-      return rows;
+      if (pingInput.checked) {
+        children.push({ type: 10, content: "@everyone" });
+      }
+      if (mainText || thumbnail) {
+        if (thumbnail) {
+          children.push({
+            type: 9,
+            components: [{ type: 10, content: mainText || "-# \u200B" }],
+            accessory: { type: 11, media: thumbnail, description: "Miniatura principal" }
+          });
+        } else {
+          children.push({ type: 10, content: mainText });
+        }
+      }
+
+      cleanSections().forEach(function (section) {
+        if (children.length) {
+          children.push({ type: 14, divider: true, spacing: 1 });
+        }
+        const media = sectionMediaPayload(section);
+        const text = section.body.trim() || "-# \u200B";
+        if (media) {
+          children.push({
+            type: 9,
+            components: [{ type: 10, content: text }],
+            accessory: { type: 11, media: media, description: "Imagen de sección" }
+          });
+        } else {
+          children.push({ type: 10, content: text });
+        }
+      });
+
+      const validButtons = cleanButtons();
+      if (validButtons.length) {
+        if (children.length) {
+          children.push({ type: 14, divider: true, spacing: 1 });
+        }
+        for (let index = 0; index < validButtons.length; index += 5) {
+          children.push({
+            type: 1,
+            components: validButtons.slice(index, index + 5).map(function (linkButton) {
+              return {
+                type: 2,
+                style: 5,
+                label: linkButton.label.trim(),
+                url: linkButton.url.trim()
+              };
+            })
+          });
+        }
+      }
+
+      const files = Array.from(extraFiles.files);
+      if (files.length) {
+        if (children.length) {
+          children.push({ type: 14, divider: true, spacing: 1 });
+        }
+        files.forEach(function (file, index) {
+          children.push({
+            type: 13,
+            file: { url: "attachment://file-" + (index + 1) + "-" + safeFileName(file.name) }
+          });
+        });
+      }
+      return children;
     }
 
     function buildPayload() {
-      const embed = { color: Number.parseInt(colorInput.value.slice(1), 16) };
-      const title = titleInput.value.trim();
-      const description = descriptionInput.value.trim();
-      const descriptionParts = [];
-      if (mentionModeInput.value === "inside") {
-        descriptionParts.push("**@everyone**");
-      }
-      if (description) {
-        descriptionParts.push(description);
-      }
-      if (title) {
-        embed.title = title;
-      }
-      if (descriptionParts.length) {
-        embed.description = descriptionParts.join("\n\n");
-      }
+      return {
+        flags: 32768,
+        components: [{
+          type: 17,
+          accent_color: Number.parseInt(colorInput.value.slice(1), 16),
+          components: buildContainerChildren()
+        }],
+        allowed_mentions: {
+          parse: pingInput.checked ? ["everyone"] : []
+        }
+      };
+    }
 
-      const preparedSections = cleanSections();
-      if (preparedSections.length) {
-        embed.fields = preparedSections.map((section) => ({
-          name: `────────────────────\n${section.title}`,
-          value: section.body,
-          inline: false
-        }));
+    function countComponents(component) {
+      let count = 1;
+      if (Array.isArray(component.components)) {
+        component.components.forEach(function (child) {
+          count += countComponents(child);
+        });
       }
+      if (component.accessory) {
+        count += countComponents(component.accessory);
+      }
+      return count;
+    }
 
-      const banner = getMediaPayload("banner");
-      const thumbnail = getMediaPayload("thumbnail");
+    function getUploads() {
+      const uploads = [];
+      const banner = bannerFile.files[0];
+      const thumbnail = thumbnailFile.files[0];
       if (banner) {
-        embed.image = banner;
+        uploads.push({ file: banner, name: attachmentName("banner", banner) });
       }
       if (thumbnail) {
-        embed.thumbnail = thumbnail;
+        uploads.push({ file: thumbnail, name: attachmentName("thumbnail", thumbnail) });
       }
-
-      const payload = { embeds: [embed] };
-      const components = buildComponents();
-      if (components.length) {
-        payload.components = components;
-      }
-      if (mentionModeInput.value === "real") {
-        payload.content = "@everyone";
-        payload.allowed_mentions = { parse: ["everyone"] };
-      } else {
-        payload.allowed_mentions = { parse: [] };
-      }
-      return payload;
+      sections.forEach(function (section) {
+        if (section.file) {
+          uploads.push({
+            file: section.file,
+            name: "section-" + section.id + "-" + safeFileName(section.file.name)
+          });
+        }
+      });
+      Array.from(extraFiles.files).forEach(function (file, index) {
+        uploads.push({
+          file: file,
+          name: "file-" + (index + 1) + "-" + safeFileName(file.name)
+        });
+      });
+      return uploads;
     }
 
     function setPreviewImage(image, wrapper, source) {
@@ -1858,10 +2162,10 @@
         wrapper.hidden = true;
         return;
       }
-      image.onload = () => {
+      image.onload = function () {
         wrapper.hidden = false;
       };
-      image.onerror = () => {
+      image.onerror = function () {
         wrapper.hidden = true;
       };
       wrapper.hidden = false;
@@ -1869,113 +2173,150 @@
     }
 
     function updatePreview() {
-      titleCount.textContent = `${titleInput.value.length} / 256`;
-      descriptionCount.textContent = `${descriptionInput.value.length} / 4000`;
+      titleCount.textContent = titleInput.value.length + " / 256";
+      descriptionCount.textContent = descriptionInput.value.length + " / 4000";
       colorValue.textContent = colorInput.value.toUpperCase();
-      embedPreview.style.setProperty("--embed-color", colorInput.value);
+      componentPreview.style.setProperty("--component-color", colorInput.value);
+      previewPing.hidden = !pingInput.checked;
+
       const title = titleInput.value.trim();
       const description = descriptionInput.value.trim();
-      previewTitle.textContent = title || "Tu título aparecerá aquí";
+      previewTitle.textContent = title || "Título del mensaje";
       previewTitle.classList.toggle("placeholder", !title);
-      previewDescription.textContent = description || "La descripción y las secciones se verán aquí.";
+      previewDescription.textContent = description || "La descripción aparecerá aquí.";
       previewDescription.classList.toggle("placeholder", !description);
-      insideMention.hidden = mentionModeInput.value !== "inside";
-      realMention.hidden = mentionModeInput.value !== "real";
 
-      setPreviewImage(bannerPreview, bannerWrap, getMediaPreviewUrl("banner"));
-      const thumbnailSource = getMediaPreviewUrl("thumbnail");
-      setPreviewImage(thumbnailPreview, thumbnailWrap, thumbnailSource);
-      embedCopy.classList.toggle("with-thumbnail", Boolean(thumbnailSource));
+      setPreviewImage(previewBanner, previewBannerWrap, mainMediaPreview("banner"));
+      const thumbnailSource = mainMediaPreview("thumbnail");
+      setPreviewImage(previewThumbnail, previewThumbnailWrap, thumbnailSource);
+      mainPreview.classList.toggle("with-image", Boolean(thumbnailSource));
 
       previewSections.textContent = "";
-      cleanSections().forEach((section) => {
+      cleanSections().forEach(function (section) {
+        const separator = document.createElement("div");
+        separator.className = "preview-separator";
         const item = document.createElement("section");
         item.className = "preview-section";
-        const name = document.createElement("strong");
-        name.textContent = section.title;
-        const body = document.createElement("p");
-        body.textContent = section.body === "\u200B" ? "" : section.body;
-        item.append(name, body);
-        previewSections.append(item);
+        const text = document.createElement("p");
+        text.textContent = section.body.trim();
+        item.append(text);
+        const mediaSource = sectionMediaPreview(section);
+        if (mediaSource) {
+          item.classList.add("with-image");
+          const wrap = document.createElement("div");
+          wrap.className = "section-thumbnail";
+          const image = document.createElement("img");
+          image.alt = "Imagen de sección";
+          image.src = mediaSource;
+          wrap.append(image);
+          item.append(wrap);
+        }
+        previewSections.append(separator, item);
       });
 
       previewButtons.textContent = "";
-      cleanButtons().forEach((linkButton) => {
-        const button = document.createElement("a");
-        button.className = "discord-button";
-        button.href = linkButton.url;
-        button.target = "_blank";
-        button.rel = "noopener noreferrer";
-        const label = document.createElement("span");
-        label.textContent = linkButton.label;
-        button.append(label);
-        previewButtons.append(button);
+      cleanButtons().forEach(function (linkButton) {
+        const link = document.createElement("a");
+        link.className = "preview-link";
+        link.href = linkButton.url.trim();
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        const text = document.createElement("span");
+        text.textContent = linkButton.label.trim();
+        link.append(text);
+        previewButtons.append(link);
       });
+      previewButtonsArea.hidden = cleanButtons().length === 0;
 
-      previewAttachments.textContent = "";
-      Array.from(extraFilesInput.files).forEach((file) => previewAttachments.append(createFileChip(file)));
-      payloadPreview.textContent = JSON.stringify(buildPayload(), null, 2);
+      previewFiles.textContent = "";
+      Array.from(extraFiles.files).forEach(function (file) {
+        previewFiles.append(createFileChip(file));
+      });
+      previewFilesArea.hidden = extraFiles.files.length === 0;
+
+      const payload = buildPayload();
+      const total = countComponents(payload.components[0]);
+      componentCount.textContent = total + " " + (total === 1 ? "componente" : "componentes");
+      payloadPreview.textContent = JSON.stringify(payload, null, 2);
     }
 
-    function validateBeforeSend() {
-      if (!isValidWebhookUrl(webhookUrlInput.value.trim())) {
-        webhookUrlInput.focus();
-        return "Escribe una URL de webhook válida de Discord.";
+    function validateForm() {
+      if (!isWebhookUrl(webhookUrl.value.trim())) {
+        webhookUrl.focus();
+        return "Escribe una URL de webhook válida.";
       }
-      const mediaInputs = [
-        { input: bannerUrlInput, file: bannerFileInput.files[0], name: "banner" },
-        { input: thumbnailUrlInput, file: thumbnailFileInput.files[0], name: "imagen pequeña" }
-      ];
-      const invalidMedia = mediaInputs.find((media) => media.input.value.trim() && !media.file && !isHttpUrl(media.input.value.trim()));
-      if (invalidMedia) {
-        invalidMedia.input.focus();
-        return `La URL de ${invalidMedia.name} no es válida.`;
+      const invalidMainImage = [
+        { input: bannerUrl, file: bannerFile.files[0], name: "banner" },
+        { input: thumbnailUrl, file: thumbnailFile.files[0], name: "miniatura" }
+      ].find(function (item) {
+        return item.input.value.trim() && !item.file && !isHttpUrl(item.input.value.trim());
+      });
+      if (invalidMainImage) {
+        invalidMainImage.input.focus();
+        return "La URL de " + invalidMainImage.name + " no es válida.";
       }
-      const incompleteButton = linkButtons.find((linkButton) => {
+      const invalidSection = sections.find(function (section) {
+        return section.imageUrl.trim() && !section.file && !isHttpUrl(section.imageUrl.trim());
+      });
+      if (invalidSection) {
+        const input = document.querySelector("#section-image-" + invalidSection.id);
+        if (input) {
+          input.focus();
+        }
+        return "Una sección tiene una URL de imagen inválida.";
+      }
+      const invalidButton = linkButtons.find(function (linkButton) {
         const hasLabel = Boolean(linkButton.label.trim());
         const hasUrl = Boolean(linkButton.url.trim());
         return hasLabel !== hasUrl || (hasUrl && !isHttpUrl(linkButton.url.trim()));
       });
-      if (incompleteButton) {
-        document.querySelector(`#button-label-${incompleteButton.id}`)?.focus();
+      if (invalidButton) {
+        const input = document.querySelector("#button-label-" + invalidButton.id);
+        if (input) {
+          input.focus();
+        }
         return "Completa el texto y una URL válida en cada botón.";
       }
-      if (getUploads().length > maxFiles) {
-        return `Seleccionaste más de ${maxFiles} archivos en total.`;
-      }
-      const embed = buildPayload().embeds[0];
-      if (!(embed.title || embed.description || embed.fields || embed.image || embed.thumbnail)) {
+      const children = buildContainerChildren();
+      if (!children.length) {
         titleInput.focus();
-        return "Añade contenido o una imagen al embed.";
+        return "Añade contenido, una imagen, una sección, un botón o un archivo.";
+      }
+      const payload = buildPayload();
+      const totalComponents = countComponents(payload.components[0]);
+      if (totalComponents > 40) {
+        return "El mensaje usa " + totalComponents + " componentes. Discord permite hasta 40.";
+      }
+      if (getUploads().length > maxFiles) {
+        return "Seleccionaste más de " + maxFiles + " archivos en total.";
       }
       return "";
     }
 
     async function sendWebhook(event) {
       event.preventDefault();
-      const validationError = validateBeforeSend();
+      const validationError = validateForm();
       if (validationError) {
         setMessage(validationError, "error");
         return;
       }
-
       const payload = buildPayload();
       const uploads = getUploads();
-      const target = new URL(webhookUrlInput.value.trim());
+      const target = new URL(webhookUrl.value.trim());
       target.searchParams.set("wait", "true");
-      if (payload.components) {
-        target.searchParams.set("with_components", "true");
-      }
+      target.searchParams.set("with_components", "true");
       sendButton.disabled = true;
       sendButton.textContent = "Enviando...";
-      setMessage("Enviando el mensaje a Discord...");
+      setMessage("Enviando a Discord...");
 
       try {
         const options = { method: "POST" };
         if (uploads.length) {
           const body = new FormData();
           body.append("payload_json", JSON.stringify(payload));
-          uploads.forEach((upload, index) => body.append(`files[${index}]`, upload.file, upload.name));
+          uploads.forEach(function (upload, index) {
+            body.append("files[" + index + "]", upload.file, upload.name);
+          });
           options.body = body;
         } else {
           options.headers = { "Content-Type": "application/json" };
@@ -1986,11 +2327,11 @@
           let detail = "";
           try {
             const data = await response.json();
-            detail = data.message ? ` ${data.message}` : "";
+            detail = data.message ? " " + data.message : "";
           } catch (error) {
             detail = "";
           }
-          throw new Error(`Discord respondió con ${response.status}.${detail}`);
+          throw new Error("Discord respondió con " + response.status + "." + detail);
         }
         setMessage("Mensaje enviado correctamente.", "success");
       } catch (error) {
@@ -2001,60 +2342,79 @@
       }
     }
 
-    function clearContent() {
+    function clearBuilder() {
       titleInput.value = "";
       descriptionInput.value = "";
-      colorInput.value = "#ef4444";
-      mentionModeInput.value = "inside";
-      bannerUrlInput.value = "";
-      thumbnailUrlInput.value = "";
-      bannerFileInput.value = "";
-      thumbnailFileInput.value = "";
-      extraFilesInput.value = "";
+      colorInput.value = "#ed4245";
+      pingInput.checked = false;
+      bannerUrl.value = "";
+      thumbnailUrl.value = "";
+      bannerFile.value = "";
+      thumbnailFile.value = "";
+      extraFiles.value = "";
+      sections.forEach(function (section) {
+        if (section.previewUrl) {
+          URL.revokeObjectURL(section.previewUrl);
+        }
+      });
       sections = [];
       linkButtons = [];
-      syncMediaFile("banner");
-      syncMediaFile("thumbnail");
+      syncMainMedia("banner");
+      syncMainMedia("thumbnail");
+      renderExtraFiles();
       renderSectionsEditor();
       renderButtonsEditor();
-      renderAttachments();
       updatePreview();
-      setMessage("Contenido limpiado. La webhook activa se conservó.");
+      setMessage("Contenido limpiado. La webhook se conservó.");
     }
 
-    webhookUrlInput.addEventListener("input", updateDestinationState);
+    webhookUrl.addEventListener("input", updateConnection);
+    saveFavoriteButton.addEventListener("click", saveFavorite);
     titleInput.addEventListener("input", updatePreview);
     descriptionInput.addEventListener("input", updatePreview);
     colorInput.addEventListener("input", updatePreview);
-    mentionModeInput.addEventListener("change", updatePreview);
-    bannerUrlInput.addEventListener("input", updatePreview);
-    thumbnailUrlInput.addEventListener("input", updatePreview);
-    bannerFileInput.addEventListener("change", () => syncMediaFile("banner"));
-    thumbnailFileInput.addEventListener("change", () => syncMediaFile("thumbnail"));
-    document.querySelector("#clear-banner").addEventListener("click", () => clearMediaFile("banner"));
-    document.querySelector("#clear-thumbnail").addEventListener("click", () => clearMediaFile("thumbnail"));
-    extraFilesInput.addEventListener("change", () => {
-      renderAttachments();
+    pingInput.addEventListener("change", updatePreview);
+    bannerUrl.addEventListener("input", updatePreview);
+    thumbnailUrl.addEventListener("input", updatePreview);
+    bannerFile.addEventListener("change", function () {
+      syncMainMedia("banner");
+    });
+    thumbnailFile.addEventListener("change", function () {
+      syncMainMedia("thumbnail");
+    });
+    document.querySelector("#clear-banner").addEventListener("click", function () {
+      clearMainMedia("banner");
+    });
+    document.querySelector("#clear-thumbnail").addEventListener("click", function () {
+      clearMainMedia("thumbnail");
+    });
+    extraFiles.addEventListener("change", function () {
+      renderExtraFiles();
       updatePreview();
     });
     addSectionButton.addEventListener("click", addSection);
     addButtonButton.addEventListener("click", addLinkButton);
-    clearContentButton.addEventListener("click", clearContent);
-    saveFavoriteButton.addEventListener("click", saveFavorite);
+    clearBuilderButton.addEventListener("click", clearBuilder);
     form.addEventListener("submit", sendWebhook);
-    window.addEventListener("beforeunload", () => {
+    window.addEventListener("beforeunload", function () {
       if (bannerObjectUrl) {
         URL.revokeObjectURL(bannerObjectUrl);
       }
       if (thumbnailObjectUrl) {
         URL.revokeObjectURL(thumbnailObjectUrl);
       }
+      sections.forEach(function (section) {
+        if (section.previewUrl) {
+          URL.revokeObjectURL(section.previewUrl);
+        }
+      });
     });
 
+    renderFavorites();
+    renderExtraFiles();
     renderSectionsEditor();
     renderButtonsEditor();
-    renderAttachments();
-    updateDestinationState();
+    updateConnection();
     updatePreview();
   </script>
 </body>
