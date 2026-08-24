@@ -1,4 +1,3 @@
-
 // Discord Server : https://discord.gg/rTGF5xhe3h
 // Página Web : https://antihambreadoscriptteam.github.io/
 
@@ -14,6 +13,6 @@
 // @run-at       document-start
 // @icon         https://testlinks.github.io/bf758e72-4d1e-4e76-a630-9fc97440e316.png
 // @grant        unsafeWindow
-// @require     https://testlinks.github.io/bypassV1.user.js
+// @require     https://testlinks.github.io/BypassV1.user.js
 // ==/UserScript==
 
