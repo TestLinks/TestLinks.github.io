@@ -3,504 +3,875 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#111318">
+  <meta name="theme-color" content="#0b0c1c">
   <meta name="description" content="Creador visual de mensajes para webhooks de Discord.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235865f2'/%3E%3Cpath d='M9 10h14v12H9zM12 14h8M12 18h5' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%235865f2'/%3E%3Cpath d='M7 15 25 7l-5 18-5-6z' fill='white' stroke='%2314152b' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
   <title>Webhook Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Unbounded:wght@600;800&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: dark;
-      --bg: #111318;
-      --bar: #16181e;
-      --panel: #1b1e24;
-      --panel-2: #20242b;
-      --input: #11141a;
-      --line: #343a45;
-      --line-soft: #2a2f38;
-      --text: #f3f4f6;
-      --muted: #a6acb6;
-      --quiet: #747c89;
-      --blue: #5865f2;
-      --blue-hover: #4752c4;
+      interpolate-size: allow-keywords;
+      --bg-top: #1c1f5c;
+      --bg-mid: #0d0e22;
+      --bg-end: #060609;
+      --ink: #14152b;
+      --text: #f2f3f7;
+      --muted: #b4b8c7;
+      --quiet: #7e8396;
+      --blurple: #5865f2;
+      --blurple-deep: #3c45a5;
+      --blurple-soft: rgba(88, 101, 242, .22);
+      --green: #57f287;
+      --yellow: #fee75c;
+      --fuchsia: #eb459e;
       --red: #ed4245;
-      --green: #3ba55d;
-      --yellow: #f0b232;
-      --danger: #ff6b6e;
-      --radius: 10px;
-      --radius-sm: 6px;
-      --max: 1480px;
+      --danger: #ff7275;
+      --glass: rgba(8, 9, 18, .62);
+      --glass-strong: rgba(6, 7, 14, .78);
+      --glass-line: rgba(255, 255, 255, .09);
+      --field: rgba(6, 7, 16, .58);
+      --field-line: rgba(255, 255, 255, .1);
+      --radius: 22px;
+      --radius-md: 14px;
+      --radius-sm: 11px;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --spring: cubic-bezier(.34, 1.56, .64, 1);
+      --max: 1440px;
+      --display: "Unbounded", "Figtree", system-ui, sans-serif;
+      --body: "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      --mono: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, monospace;
     }
 
-    * {
+    *,
+    *::before,
+    *::after {
       box-sizing: border-box;
     }
 
     html {
-      background: var(--bg);
+      background: var(--bg-end);
       scroll-behavior: smooth;
     }
 
     body {
       min-width: 320px;
+      min-height: 100vh;
       margin: 0;
-      background: var(--bg);
+      background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 34rem, var(--bg-end) 100%);
+      background-attachment: fixed;
       color: var(--text);
-      font: 14px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font: 15px/1.5 var(--body);
+      -webkit-font-smoothing: antialiased;
     }
 
     button,
     input,
     textarea {
       font: inherit;
-    }
-
-    button:focus-visible,
-    input:focus-visible,
-    textarea:focus-visible,
-    summary:focus-visible,
-    a:focus-visible {
-      outline: 2px solid #8b95ff;
-      outline-offset: 2px;
+      color: inherit;
     }
 
     button {
       border: 0;
+      background: none;
     }
 
     [hidden] {
       display: none !important;
     }
 
+    :focus-visible {
+      outline: 2px solid #9aa3ff;
+      outline-offset: 2px;
+    }
+
+    .ic {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .scenery {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .scenery .drift {
+      animation: drift 38s ease-in-out infinite alternate;
+    }
+
+    .scenery .drift.slow {
+      animation-duration: 54s;
+      animation-direction: alternate-reverse;
+    }
+
+    .scenery .tw {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: twinkle 5s ease-in-out infinite;
+    }
+
+    .scenery .tw:nth-child(2n) {
+      animation-delay: -2s;
+      animation-duration: 6.5s;
+    }
+
+    .scenery .tw:nth-child(3n) {
+      animation-delay: -3.4s;
+      animation-duration: 7.5s;
+    }
+
+    .glass {
+      position: relative;
+      isolation: isolate;
+      border: 1px solid rgba(255, 255, 255, .06);
+      border-radius: var(--radius);
+      background: var(--glass);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .05),
+        inset 0 -1px 0 rgba(0, 0, 0, .5),
+        0 24px 48px -24px rgba(0, 0, 0, .85),
+        0 2px 6px rgba(0, 0, 0, .3);
+      -webkit-backdrop-filter: blur(26px) saturate(140%) brightness(.85);
+      backdrop-filter: blur(26px) saturate(140%) brightness(.85);
+    }
+
+    .rise {
+      animation: rise .7s var(--ease) both;
+      animation-delay: calc(var(--d, 0) * 70ms);
+    }
+
     .appbar {
       position: sticky;
       top: 0;
-      z-index: 30;
-      border-bottom: 1px solid var(--line-soft);
-      background: var(--bar);
+      z-index: 40;
+      padding: 12px 0 0;
     }
 
     .appbar-inner,
     .page {
-      width: min(calc(100% - 28px), var(--max));
+      width: min(calc(100% - 32px), var(--max));
       margin-inline: auto;
     }
 
     .appbar-inner {
-      min-height: 60px;
+      min-height: 62px;
+      padding: 10px 12px 10px 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 14px;
+      border-radius: 18px;
     }
 
     .brand {
       min-width: 0;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 11px;
     }
 
-    .brand-icon {
-      width: 34px;
-      height: 34px;
+    .brand-mark {
+      width: 38px;
+      height: 38px;
       flex: 0 0 auto;
       display: grid;
       place-items: center;
-      border-radius: 8px;
-      background: var(--blue);
-      color: white;
-      font-size: 16px;
-      font-weight: 900;
+      border: 2px solid var(--ink);
+      border-radius: 12px;
+      background: var(--blurple);
+      box-shadow: 0 3px 0 var(--ink);
+      transition: transform .5s var(--spring);
     }
 
-    .brand strong,
-    .brand small {
-      display: block;
+    .brand:hover .brand-mark {
+      transform: rotate(-10deg) scale(1.06);
     }
 
-    .brand strong {
-      font-size: 14px;
+    .brand-mark svg {
+      width: 22px;
+      height: 22px;
     }
 
-    .brand small {
-      margin-top: 1px;
-      color: var(--quiet);
-      font-size: 10px;
+    .brand-name {
+      font: 800 14px/1.1 var(--display);
+      letter-spacing: .01em;
+      text-transform: uppercase;
+      white-space: nowrap;
     }
 
-    .connection {
+    .status {
+      min-height: 38px;
+      padding: 7px 14px 7px 12px;
       display: inline-flex;
       align-items: center;
-      gap: 7px;
+      gap: 8px;
+      border: 1px solid var(--field-line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .06);
       color: var(--muted);
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 700;
+      white-space: nowrap;
+      transition: color .3s ease, border-color .3s ease, background-color .3s ease;
     }
 
-    .connection::before {
-      width: 8px;
-      height: 8px;
+    .status .dot {
+      width: 9px;
+      height: 9px;
       border-radius: 50%;
       background: var(--quiet);
-      content: "";
+      transition: background-color .3s ease;
     }
 
-    .connection.ready::before {
+    .status.changed .dot {
+      animation: bounce-dot .55s var(--spring);
+    }
+
+    .status.ready {
+      border-color: rgba(87, 242, 135, .3);
+      color: #c9fbd8;
+    }
+
+    .status.ready .dot {
       background: var(--green);
     }
 
-    .connection.invalid::before {
+    .status.invalid {
+      border-color: rgba(255, 114, 117, .32);
+      color: #ffd0d1;
+    }
+
+    .status.invalid .dot {
       background: var(--danger);
     }
 
     .page {
-      padding: 22px 0 40px;
+      padding: 22px 0 56px;
+    }
+
+    .hero {
+      margin-bottom: 22px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .hero-art {
+      min-height: 260px;
+      overflow: hidden;
+      border: 3px solid var(--ink);
+      border-radius: 26px;
+      background: var(--blurple);
+      box-shadow: 0 8px 0 var(--ink), 0 30px 60px -30px rgba(0, 0, 0, .9);
+    }
+
+    .hero-art svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .art-cloud {
+      animation: drift-x 14s ease-in-out infinite alternate;
+    }
+
+    .art-cloud.two {
+      animation-duration: 18s;
+      animation-direction: alternate-reverse;
+    }
+
+    .art-plane {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: bob 3.6s ease-in-out infinite;
+    }
+
+    .art-bubble {
+      transform-box: fill-box;
+      transform-origin: 20% 100%;
+      animation: wobble 4.8s ease-in-out infinite;
+    }
+
+    .art-trail {
+      animation: dash 1.6s linear infinite;
+    }
+
+    .art-ring {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: ring 9s ease-in-out infinite alternate;
+    }
+
+    .art-star {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: twinkle 3.8s ease-in-out infinite;
+    }
+
+    .art-star:nth-of-type(2n) {
+      animation-delay: -1.4s;
+    }
+
+    .art-star:nth-of-type(3n) {
+      animation-delay: -2.6s;
+    }
+
+    .hero-card {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .hero-id {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .server-icon {
+      width: 74px;
+      height: 74px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      border: 3px solid var(--ink);
+      border-radius: 22px;
+      background: linear-gradient(160deg, #6f7bff, var(--blurple) 60%, #4650d0);
+      box-shadow: 0 5px 0 var(--ink);
+      animation: icon-in .9s var(--spring) both .25s;
+    }
+
+    .server-icon svg {
+      width: 42px;
+      height: 42px;
+    }
+
+    .hero-card h1 {
+      margin: 0;
+      font: 800 clamp(22px, 2.3vw, 30px)/1.05 var(--display);
+      letter-spacing: -.01em;
+      text-transform: uppercase;
+    }
+
+    .tagline {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .hero-meta {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 16px;
+      list-style: none;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .hero-meta li {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .hero-meta b {
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hero-meta .ic {
+      width: 15px;
+      height: 15px;
+      color: var(--quiet);
+    }
+
+    .hero-actions {
+      margin-top: auto;
+      display: grid;
+      gap: 9px;
+    }
+
+    .btn {
+      position: relative;
+      min-height: 44px;
+      padding: 10px 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, .07);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 3px 0 rgba(0, 0, 0, .45);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: transform .22s var(--spring), box-shadow .22s var(--ease), background-color .2s ease, opacity .2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, .12);
+      transform: translateY(-2px);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 5px 0 rgba(0, 0, 0, .45);
+    }
+
+    .btn:active {
+      transform: translateY(2px) scale(.98);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 1px 0 rgba(0, 0, 0, .45);
+      transition-duration: .08s;
+    }
+
+    .btn.primary {
+      border-color: rgba(255, 255, 255, .18);
+      background: var(--blurple);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28), 0 4px 0 var(--blurple-deep);
+      color: #fff;
+    }
+
+    .btn.primary:hover {
+      background: #6470f5;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 6px 0 var(--blurple-deep);
+    }
+
+    .btn.primary:active {
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), 0 1px 0 var(--blurple-deep);
+    }
+
+    .btn.ghost {
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
+      color: var(--muted);
+    }
+
+    .btn.ghost:hover {
+      background: rgba(255, 255, 255, .07);
+      box-shadow: none;
+      color: var(--text);
+    }
+
+    .btn.small {
+      min-height: 36px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: .45;
+      transform: none;
+    }
+
+    .btn.loading {
+      pointer-events: none;
+    }
+
+    .btn.loading .ic {
+      animation: spin .9s linear infinite;
     }
 
     .workspace {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(390px, .72fr);
+      grid-template-columns: minmax(0, 1fr) minmax(380px, .78fr);
       align-items: start;
-      gap: 20px;
+      gap: 22px;
     }
 
     .editor {
       min-width: 0;
       display: grid;
-      gap: 10px;
+      gap: 14px;
     }
 
-    .tool-panel,
-    .send-panel,
-    .preview-panel {
+    .panel {
       min-width: 0;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--panel);
-    }
-
-    .tool-panel {
       overflow: clip;
     }
 
-    .tool-panel > summary {
-      min-height: 56px;
-      padding: 11px 14px;
+    .panel > summary {
+      min-height: 70px;
+      padding: 14px 18px;
       display: flex;
       align-items: center;
-      gap: 11px;
+      gap: 14px;
       cursor: pointer;
       list-style: none;
       user-select: none;
+      border-radius: var(--radius);
+      transition: background-color .2s ease;
     }
 
-    .tool-panel > summary::-webkit-details-marker,
-    .section-card > summary::-webkit-details-marker {
+    .panel > summary::-webkit-details-marker {
       display: none;
     }
 
-    .tool-panel[open] > summary {
-      border-bottom: 1px solid var(--line-soft);
+    .panel > summary:hover {
+      background: rgba(255, 255, 255, .03);
     }
 
-    .tool-number {
-      width: 28px;
-      height: 28px;
-      flex: 0 0 auto;
-      display: grid;
-      place-items: center;
-      border-radius: 7px;
-      background: #292e38;
-      color: #cdd1d8;
-      font-size: 11px;
-      font-weight: 850;
+    .panel::details-content {
+      block-size: 0;
+      overflow: clip;
+      transition: block-size .45s var(--ease), content-visibility .45s allow-discrete;
     }
 
-    .tool-heading {
+    .panel[open]::details-content {
+      block-size: auto;
+    }
+
+    .panel-num {
+      min-width: 34px;
+      color: var(--quiet);
+      font: 800 15px/1 var(--display);
+      transition: color .3s ease;
+    }
+
+    .panel[open] .panel-num {
+      color: #9aa3ff;
+    }
+
+    .panel-heading {
       min-width: 0;
       flex: 1;
     }
 
-    .tool-heading strong,
-    .tool-heading small {
+    .panel-heading strong,
+    .panel-heading small {
       display: block;
     }
 
-    .tool-heading strong {
+    .panel-heading strong {
+      font: 600 15px/1.2 var(--display);
+      letter-spacing: .01em;
+    }
+
+    .panel-heading small {
+      margin-top: 4px;
+      color: var(--quiet);
       font-size: 13px;
     }
 
-    .tool-heading small {
-      margin-top: 2px;
+    .panel-count {
       color: var(--quiet);
-      font-size: 10px;
-      font-weight: 500;
-    }
-
-    .tool-count {
-      color: var(--quiet);
-      font-size: 10px;
+      font-size: 13px;
+      font-weight: 700;
       font-variant-numeric: tabular-nums;
     }
 
-    .chevron {
-      width: 22px;
+    .chev {
       color: var(--quiet);
-      font-size: 16px;
-      text-align: center;
-      transition: transform .15s ease;
+      transition: transform .45s var(--spring);
     }
 
-    .tool-panel[open] .chevron {
+    .panel[open] .chev {
       transform: rotate(180deg);
     }
 
-    .tool-body {
-      padding: 15px;
+    .panel-body {
+      padding: 4px 18px 20px;
+      display: grid;
+      gap: 18px;
+      border-top: 1px solid rgba(255, 255, 255, .06);
+      padding-top: 18px;
     }
 
-    .field-grid {
+    .grid-2 {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
+      gap: 16px;
     }
 
-    .full {
+    .span-2 {
       grid-column: 1 / -1;
     }
 
     .field {
       min-width: 0;
       display: grid;
-      gap: 6px;
+      gap: 7px;
+      align-content: start;
     }
 
     .field-row {
       display: flex;
-      align-items: center;
+      align-items: baseline;
       justify-content: space-between;
-      gap: 8px;
+      gap: 10px;
     }
 
     .field label,
     .field-label {
-      color: #daddE3;
-      font-size: 11px;
-      font-weight: 750;
+      color: #dfe1ea;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .caps {
+      margin: 0;
+      color: #e6e8f0;
+      font: 800 11px/1.2 var(--display);
+      letter-spacing: .08em;
+      text-transform: uppercase;
     }
 
     .counter,
+    .helper,
     .file-state,
-    .helper {
+    .hint {
+      margin: 0;
       color: var(--quiet);
-      font-size: 10px;
+      font-size: 12.5px;
     }
 
-    .helper {
-      margin: 0;
+    .counter {
+      font-variant-numeric: tabular-nums;
     }
 
     .input,
     .textarea {
       width: 100%;
       min-width: 0;
-      border: 1px solid #3b424e;
+      border: 1px solid var(--field-line);
       border-radius: var(--radius-sm);
-      background: var(--input);
+      background: var(--field);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, .35), 0 1px 0 rgba(255, 255, 255, .04);
       color: var(--text);
-      transition: border-color .15s ease, box-shadow .15s ease;
+      transition: border-color .2s ease, box-shadow .25s var(--ease), background-color .2s ease;
     }
 
     .input {
-      min-height: 42px;
-      padding: 9px 11px;
+      min-height: 46px;
+      padding: 10px 13px;
     }
 
     .textarea {
-      min-height: 104px;
-      padding: 10px 11px;
+      min-height: 120px;
+      padding: 12px 13px;
       resize: vertical;
     }
 
     .input::placeholder,
     .textarea::placeholder {
-      color: #5f6773;
+      color: #5c6175;
+    }
+
+    .input:hover,
+    .textarea:hover {
+      border-color: rgba(255, 255, 255, .17);
     }
 
     .input:focus,
     .textarea:focus {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(88, 101, 242, .16);
+      border-color: var(--blurple);
+      background: rgba(6, 7, 16, .75);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, .35), 0 0 0 4px var(--blurple-soft);
       outline: 0;
-    }
-
-    .button {
-      min-height: 38px;
-      padding: 8px 12px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      border: 1px solid #48505d;
-      border-radius: var(--radius-sm);
-      background: #292e37;
-      color: #f0f1f3;
-      cursor: pointer;
-      font-size: 11px;
-      font-weight: 800;
-      text-decoration: none;
-    }
-
-    .button:hover {
-      background: #333945;
-    }
-
-    .button.primary {
-      border-color: var(--blue);
-      background: var(--blue);
-      color: white;
-    }
-
-    .button.primary:hover {
-      background: var(--blue-hover);
-    }
-
-    .button.send {
-      border-color: var(--red);
-      background: var(--red);
-      color: white;
-    }
-
-    .button.send:hover {
-      background: #c93a3d;
-    }
-
-    .button.ghost {
-      background: transparent;
-    }
-
-    .button:disabled {
-      cursor: not-allowed;
-      opacity: .45;
     }
 
     .webhook-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 160px auto;
-      gap: 8px;
+      grid-template-columns: minmax(0, 1fr) 190px auto;
+      gap: 9px;
     }
 
-    .favorite-box {
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid var(--line-soft);
+    .fav-wrap {
+      display: grid;
+      gap: 10px;
     }
 
-    .favorite-head,
-    .section-toolbar,
-    .attachment-head {
+    .fav-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
     }
 
-    .favorite-head strong,
-    .attachment-head strong {
-      font-size: 11px;
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
-    .favorites-list {
-      margin-top: 8px;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 7px;
+    .chip {
+      max-width: 100%;
+      display: inline-flex;
+      align-items: stretch;
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, .06);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+      transition: border-color .25s ease, background-color .25s ease, transform .3s var(--spring);
     }
 
-    .favorite-item {
+    .chip:hover {
+      transform: translateY(-2px);
+    }
+
+    .chip.enter {
+      animation: pop-in .5s var(--spring) both;
+    }
+
+    .chip.leave {
+      animation: pop-out .24s var(--ease) both;
+      pointer-events: none;
+    }
+
+    .chip.active {
+      border-color: rgba(254, 231, 92, .5);
+      background: rgba(254, 231, 92, .1);
+    }
+
+    .chip-use {
       min-width: 0;
-      padding: 9px;
-      display: grid;
-      grid-template-columns: 18px minmax(0, 1fr) auto;
+      min-height: 38px;
+      padding: 7px 6px 7px 11px;
+      display: inline-flex;
       align-items: center;
       gap: 7px;
-      border: 1px solid var(--line-soft);
-      border-radius: 7px;
-      background: #15181e;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
     }
 
-    .favorite-item.active {
-      border-color: rgba(240, 178, 50, .55);
-    }
-
-    .star {
-      color: var(--yellow);
-    }
-
-    .favorite-copy {
-      min-width: 0;
-    }
-
-    .favorite-copy strong,
-    .favorite-copy small {
-      display: block;
+    .chip-use span {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .favorite-copy strong {
-      font-size: 10px;
+    .chip-use .ic {
+      width: 15px;
+      height: 15px;
+      color: var(--yellow);
     }
 
-    .favorite-copy small {
-      margin-top: 2px;
-      color: var(--quiet);
-      font: 8px/1.2 "SFMono-Regular", Consolas, monospace;
+    .chip.active .chip-use .ic {
+      fill: var(--yellow);
     }
 
-    .favorite-actions {
-      display: flex;
-      gap: 4px;
-    }
-
-    .icon-button {
-      width: 30px;
-      height: 30px;
+    .chip-del {
+      width: 34px;
       display: grid;
       place-items: center;
-      border: 1px solid #3d444f;
-      border-radius: 5px;
-      background: #22262e;
-      color: #d7dae0;
+      border-left: 1px solid rgba(255, 255, 255, .08);
+      border-radius: 0 10px 10px 0;
+      color: var(--quiet);
       cursor: pointer;
-      font-size: 11px;
+      transition: color .2s ease, background-color .2s ease;
     }
 
-    .icon-button.danger {
+    .chip-del:hover {
+      background: rgba(255, 114, 117, .12);
       color: var(--danger);
     }
 
-    .empty-state {
-      margin: 8px 0 0;
-      padding: 13px;
-      border: 1px dashed #3a414c;
-      border-radius: 7px;
+    .chip-del .ic {
+      width: 14px;
+      height: 14px;
+    }
+
+    .empty {
+      margin: 0;
+      padding: 16px;
+      border: 1.5px dashed rgba(255, 255, 255, .12);
+      border-radius: var(--radius-md);
       color: var(--quiet);
-      font-size: 10px;
+      font-size: 13px;
       text-align: center;
     }
 
+    .color-row {
+      min-height: 46px;
+      padding: 6px 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      border: 1px solid var(--field-line);
+      border-radius: var(--radius-sm);
+      background: var(--field);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, .35);
+    }
+
+    .swatch {
+      width: 26px;
+      height: 26px;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+      background: var(--c);
+      box-shadow: 0 2px 0 var(--ink);
+      cursor: pointer;
+      transition: transform .3s var(--spring), box-shadow .2s ease;
+    }
+
+    .swatch.dark {
+      border-color: #4a4f63;
+    }
+
+    .swatch:hover {
+      transform: translateY(-2px) scale(1.08);
+    }
+
+    .swatch.on {
+      box-shadow: 0 0 0 2px var(--bg-mid), 0 0 0 4px #fff;
+      transform: scale(1.05);
+    }
+
+    .color-custom {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .color-custom input {
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .color-custom output {
+      font: 700 12px/1 var(--mono);
+      color: var(--muted);
+    }
+
     .switch-row {
-      min-height: 42px;
-      padding: 8px 10px;
+      min-height: 46px;
+      padding: 8px 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      border: 1px solid #3b424e;
+      gap: 12px;
+      border: 1px solid var(--field-line);
       border-radius: var(--radius-sm);
-      background: var(--input);
+      background: var(--field);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, .35);
       cursor: pointer;
     }
 
@@ -510,25 +881,25 @@
     }
 
     .switch-copy strong {
-      font-size: 11px;
+      font-size: 13.5px;
     }
 
     .switch-copy small {
       color: var(--quiet);
-      font-size: 9px;
+      font-size: 12px;
     }
 
     .switch {
       position: relative;
-      width: 38px;
-      height: 22px;
+      width: 46px;
+      height: 28px;
       flex: 0 0 auto;
     }
 
     .switch input {
       position: absolute;
-      z-index: 2;
       inset: 0;
+      z-index: 2;
       width: 100%;
       height: 100%;
       margin: 0;
@@ -539,104 +910,119 @@
     .switch span {
       position: absolute;
       inset: 0;
+      border: 2px solid var(--ink);
       border-radius: 999px;
-      background: #444b56;
-      transition: background .15s ease;
+      background: #3a3e52;
+      transition: background-color .25s ease;
       pointer-events: none;
     }
 
     .switch span::after {
       position: absolute;
-      top: 3px;
-      left: 3px;
-      width: 16px;
-      height: 16px;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--ink);
       border-radius: 50%;
-      background: white;
+      background: #fff;
       content: "";
-      transition: transform .15s ease;
+      transition: transform .45s var(--spring), width .2s ease;
+    }
+
+    .switch input:active + span::after {
+      width: 24px;
     }
 
     .switch input:checked + span {
-      background: var(--blue);
+      background: var(--blurple);
     }
 
     .switch input:checked + span::after {
-      transform: translateX(16px);
+      transform: translateX(18px);
     }
 
-    .color-control {
-      min-height: 42px;
-      padding: 5px 8px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      border: 1px solid #3b424e;
-      border-radius: var(--radius-sm);
-      background: var(--input);
+    .switch input:checked:active + span::after {
+      transform: translateX(14px);
     }
 
-    .color-control input {
-      width: 30px;
-      height: 30px;
-      padding: 0;
-      border: 0;
-      background: transparent;
-      cursor: pointer;
+    .switch input:focus-visible + span {
+      outline: 2px solid #9aa3ff;
+      outline-offset: 2px;
     }
 
-    .color-control output {
-      font: 700 10px/1 "SFMono-Regular", Consolas, monospace;
-    }
-
-    .media-grid {
+    .slots {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 9px;
+      gap: 18px;
     }
 
-    .media-card {
+    .slot {
       min-width: 0;
-      padding: 12px;
-      border: 1px solid var(--line-soft);
-      border-radius: 8px;
-      background: #16191f;
+      display: grid;
+      gap: 9px;
+      align-content: start;
     }
 
-    .media-title {
-      margin-bottom: 9px;
+    .slot-head {
       display: flex;
-      align-items: center;
+      align-items: baseline;
       justify-content: space-between;
       gap: 8px;
     }
 
-    .media-title strong {
-      font-size: 11px;
+    .slot-head strong {
+      font-size: 14px;
     }
 
-    .optional {
-      color: var(--quiet);
-      font-size: 8px;
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
+    .slot-line {
+      display: grid;
+      grid-template-columns: 46px minmax(0, 1fr);
+      gap: 8px;
     }
 
-    .media-actions {
-      margin-top: 8px;
+    .mini {
+      position: relative;
+      width: 46px;
+      height: 46px;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--field-line);
+      border-radius: var(--radius-sm);
+      background: var(--field);
+      color: #4f5469;
+    }
+
+    .mini img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transform: scale(1.15);
+      transition: opacity .35s ease, transform .5s var(--ease);
+    }
+
+    .mini.has-img img {
+      opacity: 1;
+      transform: none;
+    }
+
+    .actions {
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
-    .file-picker {
+    .picker {
       position: relative;
       overflow: hidden;
     }
 
-    .file-picker input {
+    .picker input {
       position: absolute;
       width: 1px;
       height: 1px;
@@ -644,627 +1030,1052 @@
       clip-path: inset(50%);
     }
 
+    .picker:focus-within {
+      outline: 2px solid #9aa3ff;
+      outline-offset: 2px;
+    }
+
     .file-state {
       min-width: 0;
-      flex: 1 1 100px;
+      flex: 1 1 120px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .attachments {
-      margin-top: 10px;
-      padding-top: 11px;
-      border-top: 1px solid var(--line-soft);
+    .divider {
+      height: 1px;
+      margin: 2px 0;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .1) 15%, rgba(255, 255, 255, .1) 85%, rgba(255, 255, 255, 0));
     }
 
-    .file-list,
-    .preview-files {
-      margin-top: 8px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-    }
-
-    .file-chip {
-      max-width: 100%;
-      padding: 4px 7px;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      border: 1px solid #3c434e;
-      border-radius: 5px;
-      background: #20242b;
-      color: #cdd1d7;
-      font-size: 9px;
-    }
-
-    .file-chip span:last-child {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .section-toolbar {
-      margin-bottom: 9px;
-    }
-
-    .section-list,
-    .button-list {
-      display: grid;
-      gap: 7px;
-    }
-
-    .section-card,
-    .button-card {
-      border: 1px solid var(--line-soft);
-      border-radius: 8px;
-      background: #16191f;
-    }
-
-    .section-card {
-      overflow: clip;
-    }
-
-    .section-card > summary {
-      min-height: 46px;
-      padding: 8px 10px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      list-style: none;
-    }
-
-    .section-card[open] > summary {
-      border-bottom: 1px solid #282d35;
-    }
-
-    .section-card .section-index {
-      width: 24px;
-      height: 24px;
-      display: grid;
-      place-items: center;
-      border-radius: 5px;
-      background: #292e38;
-      color: #d5d8dd;
-      font-size: 9px;
-      font-weight: 850;
-    }
-
-    .section-card .section-label {
-      flex: 1;
-      font-size: 11px;
-      font-weight: 800;
-    }
-
-    .section-status {
-      color: var(--quiet);
-      font-size: 9px;
-    }
-
-    .section-card[open] .section-chevron {
-      transform: rotate(180deg);
-    }
-
-    .section-chevron {
-      color: var(--quiet);
-      transition: transform .15s ease;
-    }
-
-    .section-content {
-      padding: 11px;
-    }
-
-    .section-media {
-      margin-top: 9px;
-      padding-top: 9px;
-      border-top: 1px solid #262b33;
-    }
-
-    .button-card {
-      padding: 10px;
-      display: grid;
-      gap: 8px;
-    }
-
-    .button-card-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .button-card-head strong {
-      font-size: 10px;
-    }
-
-    .button-fields {
-      display: grid;
-      grid-template-columns: minmax(120px, .5fr) minmax(0, 1fr);
-      gap: 8px;
-    }
-
-    .remove {
-      min-height: 30px;
-      padding: 5px 8px;
-      border: 1px solid transparent;
-      border-radius: 5px;
-      background: transparent;
-      color: var(--danger);
-      cursor: pointer;
-      font-size: 9px;
-      font-weight: 800;
-    }
-
-    .remove:hover {
-      border-color: rgba(255, 107, 110, .25);
-      background: rgba(255, 107, 110, .08);
-    }
-
-    .send-panel {
-      padding: 12px 14px;
+    .block-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
     }
 
+    .block-head > div {
+      min-width: 0;
+    }
+
+    .block-head strong {
+      display: block;
+      font-size: 14px;
+    }
+
+    .list {
+      display: grid;
+    }
+
+    .item {
+      padding: 14px 0;
+      display: grid;
+      gap: 10px;
+      border-top: 1px solid rgba(255, 255, 255, .07);
+    }
+
+    .item:first-child {
+      padding-top: 2px;
+      border-top: 0;
+    }
+
+    .item.enter {
+      animation: pop-in .5s var(--spring) both;
+    }
+
+    .item.leave {
+      animation: pop-out .24s var(--ease) both;
+      pointer-events: none;
+    }
+
+    .item-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .item-index {
+      width: 26px;
+      height: 26px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+      background: #2b2f48;
+      box-shadow: 0 2px 0 var(--ink);
+      font: 800 11px/1 var(--display);
+    }
+
+    .item-title {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .item-meta {
+      color: var(--quiet);
+      font-size: 12.5px;
+    }
+
+    .remove {
+      min-height: 34px;
+      padding: 6px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 9px;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      transition: background-color .2s ease, transform .25s var(--spring);
+    }
+
+    .remove:hover {
+      background: rgba(255, 114, 117, .1);
+    }
+
+    .remove:active {
+      transform: scale(.94);
+    }
+
+    .remove .ic {
+      width: 15px;
+      height: 15px;
+    }
+
+    .button-fields {
+      display: grid;
+      grid-template-columns: minmax(130px, .55fr) minmax(0, 1fr);
+      gap: 9px;
+    }
+
+    .file-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .file-chip {
+      max-width: 100%;
+      padding: 7px 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, .05);
+      color: #d4d7e2;
+      font-size: 13px;
+      animation: pop-in .45s var(--spring) both;
+    }
+
+    .file-chip .ic {
+      width: 15px;
+      height: 15px;
+      color: var(--quiet);
+    }
+
+    .file-chip span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .dock {
+      position: sticky;
+      bottom: 14px;
+      z-index: 20;
+      padding: 12px 12px 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      border-radius: 18px;
+      background: var(--glass-strong);
+    }
+
+    .dock.shake {
+      animation: shake .45s var(--ease);
+    }
+
     .form-message {
       min-width: 0;
       margin: 0;
-      color: var(--quiet);
-      font-size: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13.5px;
     }
 
     .form-message.success {
-      color: #57d681;
+      color: #8ff5b0;
     }
 
     .form-message.error {
       color: var(--danger);
     }
 
-    .send-actions {
-      flex: 0 0 auto;
-      display: flex;
-      gap: 7px;
+    .form-message.bump {
+      animation: msg-in .45s var(--spring);
     }
 
-    .preview-column {
+    .dock-actions {
+      flex: 0 0 auto;
+      display: flex;
+      gap: 8px;
+    }
+
+    .preview-col {
       min-width: 0;
+      position: sticky;
+      top: 92px;
+      display: grid;
+      gap: 14px;
     }
 
     .preview-panel {
-      position: sticky;
-      top: 80px;
       overflow: clip;
     }
 
     .preview-head {
-      min-height: 52px;
-      padding: 11px 14px;
+      padding: 16px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      border-bottom: 1px solid var(--line-soft);
-    }
-
-    .preview-head strong {
-      font-size: 12px;
     }
 
     .preview-head span {
       color: var(--quiet);
-      font-size: 9px;
+      font-size: 12.5px;
+      font-variant-numeric: tabular-nums;
     }
 
-    .discord-stage {
-      min-height: 410px;
+    .stage {
+      margin: 0 10px;
+      min-height: 380px;
+      max-height: calc(100vh - 260px);
+      overflow: auto;
       padding: 18px 14px 22px;
-      background: #1e1f22;
+      border: 1px solid rgba(255, 255, 255, .06);
+      border-radius: 16px;
+      background: #1a1a1e;
+      box-shadow: inset 0 2px 12px rgba(0, 0, 0, .45);
+      scrollbar-width: thin;
+      scrollbar-color: #3b3d46 transparent;
     }
 
-    .discord-message {
+    .msg {
       display: grid;
-      grid-template-columns: 38px minmax(0, 1fr);
-      gap: 9px;
+      grid-template-columns: 40px minmax(0, 1fr);
+      gap: 12px;
     }
 
     .avatar {
-      width: 38px;
-      height: 38px;
+      width: 40px;
+      height: 40px;
       display: grid;
       place-items: center;
       border-radius: 50%;
-      background: #313338;
-      color: white;
-      font-size: 10px;
-      font-weight: 900;
+      background: var(--blurple);
     }
 
-    .message-body {
+    .avatar svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .msg-body {
       min-width: 0;
     }
 
-    .message-meta {
-      margin-bottom: 5px;
+    .msg-meta {
+      margin-bottom: 6px;
       display: flex;
       align-items: baseline;
-      gap: 5px;
-      flex-wrap: wrap;
+      gap: 6px;
     }
 
-    .message-meta strong {
-      font-size: 12px;
+    .msg-meta strong {
+      font-size: 15px;
+      font-weight: 600;
     }
 
     .app-tag {
-      padding: 1px 4px;
-      border-radius: 3px;
-      background: var(--blue);
-      font-size: 7px;
-      font-weight: 850;
-    }
-
-    .message-meta time {
-      color: #949ba4;
-      font-size: 8px;
-    }
-
-    .component-container {
-      overflow: hidden;
-      border: 1px solid #393c43;
-      border-left: 4px solid var(--component-color, #ed4245);
+      padding: 1px 5px;
       border-radius: 4px;
-      background: #2b2d31;
+      background: var(--blurple);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 15px;
     }
 
-    .preview-banner {
-      width: 100%;
-      aspect-ratio: 16 / 5.6;
+    .msg-meta time {
+      color: #949ba4;
+      font-size: 12px;
+    }
+
+    .container {
+      max-width: 520px;
       overflow: hidden;
-      background: #1a1b1f;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      border: 1px solid #36373d;
+      border-left: 4px solid var(--accent, #5865f2);
+      border-radius: 8px;
+      background: #232428;
+      transition: border-left-color .35s ease;
     }
 
-    .preview-banner img {
+    .pv-media {
+      width: fit-content;
+      max-width: 100%;
+      overflow: hidden;
+      border-radius: 8px;
+      background: #1a1b1f;
+      animation: fade-up .45s var(--ease) both;
+    }
+
+    .pv-media img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .pv-ping {
+      width: fit-content;
+      padding: 0 3px;
+      border-radius: 3px;
+      background: rgba(88, 101, 242, .3);
+      color: #c9cdfb;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .pv-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .pv-row.with-thumb {
+      grid-template-columns: minmax(0, 1fr) 80px;
+    }
+
+    .pv-thumb {
+      width: 80px;
+      height: 80px;
+      overflow: hidden;
+      border-radius: 8px;
+      background: #1a1b1f;
+      animation: fade-up .45s var(--ease) both;
+    }
+
+    .pv-thumb img {
       width: 100%;
       height: 100%;
       display: block;
       object-fit: cover;
     }
 
-    .component-inner {
-      padding: 12px;
-    }
-
-    .ping-preview {
-      width: fit-content;
-      margin-bottom: 8px;
-      padding: 1px 4px;
-      border-radius: 3px;
-      background: rgba(88, 101, 242, .32);
-      color: #d9dcff;
-      font-size: 11px;
-      font-weight: 650;
-    }
-
-    .main-preview,
-    .preview-section {
-      position: relative;
-    }
-
-    .main-preview.with-image,
-    .preview-section.with-image {
-      min-height: 66px;
-      padding-right: 76px;
-    }
-
-    .preview-title {
+    .pv-title {
       margin: 0;
       color: #f2f3f5;
-      font-size: 15px;
+      font-size: 22px;
+      font-weight: 700;
       line-height: 1.25;
       overflow-wrap: anywhere;
     }
 
-    .preview-description,
-    .preview-section p {
-      margin: 5px 0 0;
+    .pv-text {
+      margin: 4px 0 0;
       color: #dbdee1;
-      font-size: 11px;
-      line-height: 1.45;
+      font-size: 15px;
+      line-height: 1.375;
       overflow-wrap: anywhere;
       white-space: pre-wrap;
     }
 
+    .pv-row .pv-text:first-child {
+      margin-top: 0;
+    }
+
     .placeholder {
-      color: #747b85 !important;
+      color: #6d717c !important;
     }
 
-    .preview-thumbnail,
-    .section-thumbnail {
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 64px;
-      height: 64px;
-      overflow: hidden;
-      border-radius: 5px;
-      background: #1a1b1f;
-    }
-
-    .preview-thumbnail img,
-    .section-thumbnail img {
-      width: 100%;
-      height: 100%;
-      display: block;
-      object-fit: cover;
-    }
-
-    .preview-separator {
+    .pv-sep {
       height: 1px;
-      margin: 10px 0;
-      background: rgba(255, 255, 255, .12);
+      background: rgba(255, 255, 255, .1);
     }
 
-    .preview-section p {
-      margin: 0;
-    }
-
-    .preview-buttons {
+    .pv-buttons {
       display: flex;
       flex-wrap: wrap;
-      gap: 5px;
+      gap: 8px;
     }
 
-    .preview-link {
-      min-height: 31px;
+    .pv-link {
+      min-height: 32px;
       max-width: 100%;
-      padding: 6px 9px;
+      padding: 6px 14px;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      border-radius: 3px;
+      gap: 7px;
+      border-radius: 8px;
       background: #4e5058;
-      color: white;
-      font-size: 10px;
-      font-weight: 700;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
       text-decoration: none;
+      transition: background-color .15s ease;
     }
 
-    .preview-link span {
+    .pv-link:hover {
+      background: #6d6f78;
+    }
+
+    .pv-link span {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .preview-link::after {
-      color: #c9cbd0;
-      content: "↗";
+    .pv-link .ic {
+      width: 14px;
+      height: 14px;
+      color: #d0d2d6;
     }
 
-    .payload {
-      border-top: 1px solid var(--line-soft);
-      background: #14171c;
+    .pv-file {
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid #36373d;
+      border-radius: 8px;
+      background: #2b2d31;
+      animation: fade-up .4s var(--ease) both;
     }
 
-    .payload summary {
-      padding: 11px 14px;
+    .pv-file .ic {
+      width: 28px;
+      height: 28px;
+      color: #8e96ff;
+    }
+
+    .pv-file strong,
+    .pv-file small {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .pv-file div {
+      min-width: 0;
+    }
+
+    .pv-file strong {
+      color: #00a8fc;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .pv-file small {
+      color: #949ba4;
+      font-size: 12px;
+    }
+
+    .json {
+      margin: 12px 10px 10px;
+      border: 1px solid rgba(255, 255, 255, .07);
+      border-radius: 14px;
+      background: rgba(0, 0, 0, .25);
+    }
+
+    .json summary {
+      min-height: 46px;
+      padding: 10px 10px 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
       color: var(--muted);
       cursor: pointer;
-      font-size: 9px;
-      font-weight: 800;
+      font-size: 13px;
+      font-weight: 700;
+      list-style: none;
     }
 
-    .payload pre {
-      max-height: 300px;
+    .json summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .json summary > span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .json .chev {
+      width: 16px;
+      height: 16px;
+    }
+
+    .json[open] .chev {
+      transform: rotate(180deg);
+    }
+
+    .json::details-content {
+      block-size: 0;
+      overflow: clip;
+      transition: block-size .4s var(--ease), content-visibility .4s allow-discrete;
+    }
+
+    .json[open]::details-content {
+      block-size: auto;
+    }
+
+    .json pre {
+      max-height: 320px;
       margin: 0;
       padding: 0 14px 14px;
       overflow: auto;
-      color: #abb3c0;
-      font: 9px/1.5 "SFMono-Regular", Consolas, monospace;
+      color: #aeb5c6;
+      font: 12px/1.55 var(--mono);
       white-space: pre-wrap;
       word-break: break-word;
     }
 
-    @media (max-width: 1060px) {
+    .flyer {
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 80;
+      width: 74px;
+      height: 74px;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .flyer.go {
+      animation: fly 1.25s cubic-bezier(.45, 0, .2, 1) forwards;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(18px) scale(.985);
+      }
+    }
+
+    @keyframes icon-in {
+      from {
+        opacity: 0;
+        transform: scale(.4) rotate(-25deg);
+      }
+    }
+
+    @keyframes pop-in {
+      0% {
+        opacity: 0;
+        transform: translateY(8px) scale(.94);
+      }
+      60% {
+        opacity: 1;
+        transform: translateY(-2px) scale(1.01);
+      }
+    }
+
+    @keyframes pop-out {
+      to {
+        opacity: 0;
+        transform: translateX(14px) scale(.96);
+      }
+    }
+
+    @keyframes fade-up {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+    }
+
+    @keyframes msg-in {
+      0% {
+        opacity: .2;
+        transform: translateY(6px);
+      }
+    }
+
+    @keyframes shake {
+      20%,
+      60% {
+        transform: translateX(-6px);
+      }
+      40%,
+      80% {
+        transform: translateX(6px);
+      }
+    }
+
+    @keyframes bounce-dot {
+      0% {
+        transform: scale(.3);
+      }
+      60% {
+        transform: scale(1.5);
+      }
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes drift {
+      to {
+        transform: translate(-40px, 16px);
+      }
+    }
+
+    @keyframes drift-x {
+      to {
+        transform: translateX(34px);
+      }
+    }
+
+    @keyframes bob {
+      0%,
+      100% {
+        transform: translateY(0) rotate(0deg);
+      }
+      50% {
+        transform: translateY(-10px) rotate(-4deg);
+      }
+    }
+
+    @keyframes wobble {
+      0%,
+      100% {
+        transform: rotate(0deg) translateY(0);
+      }
+      50% {
+        transform: rotate(-3deg) translateY(-5px);
+      }
+    }
+
+    @keyframes dash {
+      to {
+        stroke-dashoffset: -36;
+      }
+    }
+
+    @keyframes ring {
+      to {
+        transform: rotate(10deg);
+      }
+    }
+
+    @keyframes twinkle {
+      0%,
+      100% {
+        transform: scale(.75) rotate(0deg);
+        opacity: .7;
+      }
+      50% {
+        transform: scale(1.1) rotate(20deg);
+        opacity: 1;
+      }
+    }
+
+    @keyframes fly {
+      0% {
+        opacity: 0;
+        transform: translate(var(--x0), var(--y0)) scale(.5) rotate(0deg);
+      }
+      12% {
+        opacity: 1;
+        transform: translate(calc(var(--x0) - 20px), calc(var(--y0) + 10px)) scale(1) rotate(-8deg);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(calc(100vw + 80px), -120px) scale(.7) rotate(-18deg);
+      }
+    }
+
+    @media (max-width: 1140px) {
       .workspace {
         grid-template-columns: minmax(0, 1fr);
       }
 
-      .preview-panel {
+      .preview-col {
         position: static;
       }
 
-      .discord-stage {
-        min-height: 340px;
+      .stage {
+        max-height: none;
+      }
+    }
+
+    @media (max-width: 880px) {
+      .hero {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .hero-art {
+        min-height: 180px;
+        aspect-ratio: 16 / 7;
+      }
+
+      .hero-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
 
     @media (max-width: 680px) {
-      .appbar-inner,
-      .page {
-        width: min(calc(100% - 16px), var(--max));
+      body {
+        font-size: 14.5px;
+      }
+
+      .appbar {
+        padding-top: 8px;
+      }
+
+      .appbar-inner {
+        padding: 8px 8px 8px 10px;
       }
 
       .page {
-        padding-top: 12px;
+        padding-top: 16px;
       }
 
-      .workspace,
-      .editor {
-        gap: 8px;
+      .hero {
+        gap: 14px;
+        margin-bottom: 14px;
       }
 
-      .tool-panel > summary {
-        min-height: 54px;
-        padding: 10px 11px;
+      .hero-card {
+        padding: 18px;
       }
 
-      .tool-heading small {
+      .server-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 18px;
+      }
+
+      .server-icon svg {
+        width: 34px;
+        height: 34px;
+      }
+
+      .panel > summary {
+        min-height: 64px;
+        padding: 12px 14px;
+        gap: 10px;
+      }
+
+      .panel-num {
+        min-width: 26px;
+      }
+
+      .panel-heading small {
         display: none;
       }
 
-      .tool-body {
-        padding: 11px;
+      .panel-body {
+        padding: 14px 14px 16px;
       }
 
-      .field-grid,
-      .media-grid,
+      .grid-2,
+      .slots,
       .button-fields,
-      .favorites-list,
       .webhook-row {
         grid-template-columns: minmax(0, 1fr);
       }
 
-      .full {
+      .span-2 {
         grid-column: auto;
       }
 
-      .webhook-row .button {
-        width: 100%;
-      }
-
-      .send-panel {
+      .block-head {
         align-items: stretch;
         flex-direction: column;
       }
 
-      .send-actions {
-        width: 100%;
+      .dock {
+        align-items: stretch;
+        flex-direction: column;
+        padding: 12px;
       }
 
-      .send-actions .button {
+      .dock-actions .btn {
         flex: 1;
       }
 
-      .button,
-      .input,
-      .switch-row {
-        min-height: 44px;
+      .stage {
+        margin: 0 8px;
+        padding: 14px 10px 18px;
       }
 
-      .remove,
-      .icon-button {
-        min-height: 36px;
-      }
-
-      .discord-stage {
-        padding: 14px 9px 18px;
-      }
-
-      .discord-message {
-        grid-template-columns: 32px minmax(0, 1fr);
-        gap: 7px;
+      .msg {
+        grid-template-columns: 34px minmax(0, 1fr);
+        gap: 9px;
       }
 
       .avatar {
-        width: 32px;
-        height: 32px;
-        font-size: 8px;
+        width: 34px;
+        height: 34px;
+      }
+
+      .pv-row.with-thumb {
+        grid-template-columns: minmax(0, 1fr) 64px;
+      }
+
+      .pv-thumb {
+        width: 64px;
+        height: 64px;
       }
     }
 
-    @media (max-width: 390px) {
-      .brand small {
+    @media (max-width: 400px) {
+      .brand-name {
+        font-size: 12px;
+      }
+
+      .status {
+        padding: 7px 10px;
+        font-size: 12px;
+      }
+
+      .hero-actions {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .color-custom output {
         display: none;
       }
+    }
 
-      .connection {
-        font-size: 0;
-      }
-
-      .connection::before {
-        width: 10px;
-        height: 10px;
-      }
-
-      .tool-count {
-        display: none;
-      }
-
-      .main-preview.with-image,
-      .preview-section.with-image {
-        min-height: 58px;
-        padding-right: 66px;
-      }
-
-      .preview-thumbnail,
-      .section-thumbnail {
-        width: 56px;
-        height: 56px;
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        animation-delay: 0ms !important;
+        transition-duration: .001ms !important;
+        scroll-behavior: auto !important;
       }
     }
   </style>
 </head>
 <body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.2 6.1L12 16.8l-5.5 2.9 1.2-6.1-4.5-4.2 6.1-.8z"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></symbol>
+      <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
+      <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3 3 10.5l7 3 3 7z"/><path d="m10 13.5 4.5-4.5"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="3"/><path d="M16 8V6a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h2"/></symbol>
+      <symbol id="i-link" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></symbol>
+      <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></symbol>
+      <symbol id="i-paperclip" viewBox="0 0 24 24"><path d="m20 11-8.5 8.5a5 5 0 0 1-7-7L13 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L14 7"/></symbol>
+      <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5M16 7l5 5-5 5"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+      <symbol id="plane-art" viewBox="0 0 100 100"><path d="M6 46 92 10 68 88 48 60z" fill="#fff" stroke="#14152b" stroke-width="6" stroke-linejoin="round"/><path d="M48 60 92 10" fill="none" stroke="#14152b" stroke-width="6" stroke-linecap="round"/><path d="M48 60 44 82 58 68" fill="#c9cdfb" stroke="#14152b" stroke-width="6" stroke-linejoin="round"/></symbol>
+    </defs>
+  </svg>
+
+  <svg class="scenery" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <g class="drift">
+      <circle cx="1290" cy="770" r="210" fill="#1b1e55" stroke="#2c3190" stroke-width="6"/>
+      <circle cx="1220" cy="700" r="34" fill="#22266a"/>
+      <circle cx="1350" cy="820" r="22" fill="#22266a"/>
+      <ellipse cx="1290" cy="770" rx="330" ry="58" fill="none" stroke="#3b3f9e" stroke-width="6" transform="rotate(-14 1290 770)" opacity=".7"/>
+    </g>
+    <g class="drift slow">
+      <path d="M90 640a46 46 0 0 1 40-52 62 62 0 0 1 112-8 50 50 0 0 1 74 44 38 38 0 0 1-12 70H112a38 38 0 0 1-22-54z" fill="#171a46" stroke="#262a74" stroke-width="5"/>
+      <path d="M980 170a30 30 0 0 1 26-34 40 40 0 0 1 72-5 32 32 0 0 1 48 28 24 24 0 0 1-8 46h-124a24 24 0 0 1-14-35z" fill="#1d2064" stroke="#2d3290" stroke-width="4" opacity=".75"/>
+    </g>
+    <g fill="#fee75c" opacity=".55">
+      <path class="tw" d="M200 120c2 9 3 10 12 12-9 2-10 3-12 12-2-9-3-10-12-12 9-2 10-3 12-12z"/>
+      <path class="tw" d="M620 70c2 7 2 8 9 9-7 2-7 2-9 9-2-7-2-7-9-9 7-1 7-2 9-9z"/>
+      <path class="tw" d="M860 300c2 8 3 9 11 11-8 2-9 3-11 11-2-8-3-9-11-11 8-2 9-3 11-11z"/>
+      <path class="tw" d="M1380 120c2 9 3 10 12 12-9 2-10 3-12 12-2-9-3-10-12-12 9-2 10-3 12-12z"/>
+      <path class="tw" d="M90 420c1 6 2 7 8 8-6 1-7 2-8 8-1-6-2-7-8-8 6-1 7-2 8-8z"/>
+      <path class="tw" d="M720 820c2 8 3 9 11 11-8 2-9 3-11 11-2-8-3-9-11-11 8-2 9-3 11-11z"/>
+    </g>
+    <g fill="#ffffff" opacity=".35">
+      <circle cx="340" cy="210" r="2.5"/>
+      <circle cx="520" cy="380" r="2"/>
+      <circle cx="1040" cy="420" r="2.5"/>
+      <circle cx="1210" cy="260" r="2"/>
+      <circle cx="160" cy="780" r="2"/>
+      <circle cx="960" cy="640" r="2.5"/>
+      <circle cx="420" cy="560" r="1.8"/>
+    </g>
+  </svg>
+
   <header class="appbar">
-    <div class="appbar-inner">
+    <div class="appbar-inner glass">
       <div class="brand">
-        <div class="brand-icon" aria-hidden="true">W</div>
-        <div>
-          <strong>Webhook Builder</strong>
-          <small>Crea mensajes para Discord</small>
-        </div>
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 100 100"><use href="#plane-art"/></svg>
+        </span>
+        <span class="brand-name">Webhook Builder</span>
       </div>
-      <div class="connection" id="connection-state">Sin webhook</div>
+      <div class="status" id="connection-state" role="status">
+        <span class="dot" aria-hidden="true"></span>
+        <span id="connection-text">Sin webhook</span>
+      </div>
     </div>
   </header>
 
   <main class="page">
+    <section class="hero" aria-label="Presentación">
+      <div class="hero-art rise" style="--d:0" aria-hidden="true">
+        <svg viewBox="0 0 720 300" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#6470f5"/>
+              <stop offset="1" stop-color="#3d33a6"/>
+            </linearGradient>
+          </defs>
+          <rect width="720" height="300" fill="url(#sky)"/>
+          <g fill="#fee75c" stroke="#14152b" stroke-width="3" stroke-linejoin="round">
+            <path class="art-star" d="M80 40c3 12 4 13 16 16-12 3-13 4-16 16-3-12-4-13-16-16 12-3 13-4 16-16z"/>
+            <path class="art-star" d="M300 26c2 9 3 10 12 12-9 2-10 3-12 12-2-9-3-10-12-12 9-2 10-3 12-12z"/>
+            <path class="art-star" d="M470 120c2 8 3 9 11 11-8 2-9 3-11 11-2-8-3-9-11-11 8-2 9-3 11-11z"/>
+            <path class="art-star" d="M690 170c2 8 3 9 11 11-8 2-9 3-11 11-2-8-3-9-11-11 8-2 9-3 11-11z"/>
+          </g>
+          <g>
+            <circle cx="598" cy="84" r="46" fill="#fee75c" stroke="#14152b" stroke-width="5"/>
+            <circle cx="582" cy="70" r="9" fill="#f5c93a" stroke="#14152b" stroke-width="3"/>
+            <circle cx="612" cy="102" r="6" fill="#f5c93a" stroke="#14152b" stroke-width="3"/>
+            <g class="art-ring">
+              <ellipse cx="598" cy="84" rx="84" ry="18" fill="none" stroke="#14152b" stroke-width="11" transform="rotate(-16 598 84)"/>
+              <ellipse cx="598" cy="84" rx="84" ry="18" fill="none" stroke="#eb459e" stroke-width="5" transform="rotate(-16 598 84)"/>
+            </g>
+            <path d="M552 80a46 46 0 0 0 92 8" fill="#fee75c" stroke="#14152b" stroke-width="5"/>
+          </g>
+          <g class="art-cloud">
+            <path d="M40 150a22 22 0 0 1 20-26 32 32 0 0 1 58-6 26 26 0 0 1 38 24 20 20 0 0 1-6 36H54a20 20 0 0 1-14-28z" fill="#fff" stroke="#14152b" stroke-width="5" stroke-linejoin="round"/>
+          </g>
+          <g class="art-cloud two">
+            <path d="M486 214a18 18 0 0 1 16-22 26 26 0 0 1 46-4 20 20 0 0 1 30 18 16 16 0 0 1-4 28h-76a16 16 0 0 1-12-20z" fill="#fff" stroke="#14152b" stroke-width="5" stroke-linejoin="round"/>
+          </g>
+          <path d="M-10 250c90-46 170-40 250-14s170 30 250 0 150-34 240-18v100H-10z" fill="#2f35a8" stroke="#14152b" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M-10 280c120-30 220-16 330 2s220 6 410-18v60H-10z" fill="#23287f" stroke="#14152b" stroke-width="5" stroke-linejoin="round"/>
+          <path class="art-trail" d="M130 236c60-30 90-90 170-90s110-40 140-70" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-dasharray="3 15" opacity=".9"/>
+          <g transform="translate(176 54)">
+            <g class="art-bubble">
+              <path d="M22 0h120a22 22 0 0 1 22 22v34a22 22 0 0 1-22 22H52l-24 18 4-18h-10A22 22 0 0 1 0 56V22A22 22 0 0 1 22 0z" fill="#fff" stroke="#14152b" stroke-width="5" stroke-linejoin="round"/>
+              <rect x="18" y="18" width="34" height="34" rx="10" fill="#5865f2" stroke="#14152b" stroke-width="3.5"/>
+              <rect x="62" y="20" width="84" height="10" rx="5" fill="#14152b"/>
+              <rect x="62" y="38" width="60" height="8" rx="4" fill="#c4c8ef"/>
+              <rect x="62" y="52" width="72" height="8" rx="4" fill="#c4c8ef"/>
+            </g>
+          </g>
+          <g transform="translate(410 36)">
+            <g class="art-plane">
+              <svg width="92" height="92" viewBox="0 0 100 100"><use href="#plane-art"/></svg>
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      <div class="hero-card glass rise" style="--d:1">
+        <div class="hero-id">
+          <div class="server-icon" aria-hidden="true">
+            <svg viewBox="0 0 100 100"><use href="#plane-art"/></svg>
+          </div>
+          <div>
+            <h1>Webhook Builder</h1>
+            <p class="tagline">Diseña mensajes con componentes y envíalos a tu canal.</p>
+          </div>
+        </div>
+        <ul class="hero-meta">
+          <li><svg class="ic"><use href="#i-layers"/></svg><b id="meta-components">1</b> componentes</li>
+          <li><svg class="ic"><use href="#i-paperclip"/></svg><b id="meta-files">0</b> archivos</li>
+        </ul>
+        <div class="hero-actions">
+          <button class="btn primary" type="submit" form="builder-form" data-send>
+            <svg class="ic"><use href="#i-send"/></svg><span>Enviar a Discord</span>
+          </button>
+          <button class="btn" type="button" data-copy-json>
+            <svg class="ic"><use href="#i-copy"/></svg><span>Copiar JSON</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
     <div class="workspace">
       <form class="editor" id="builder-form" novalidate>
-        <details class="tool-panel" open>
+        <details class="panel glass rise" style="--d:2" open>
           <summary>
-            <span class="tool-number">1</span>
-            <span class="tool-heading">
+            <span class="panel-num">01</span>
+            <span class="panel-heading">
               <strong>Webhook</strong>
               <small>Destino y favoritas</small>
             </span>
-            <span class="chevron" aria-hidden="true">⌃</span>
+            <svg class="ic chev" aria-hidden="true"><use href="#i-chevron"/></svg>
           </summary>
-          <div class="tool-body">
+          <div class="panel-body">
             <div class="field">
               <label for="webhook-url">URL de la webhook</label>
               <div class="webhook-row">
-                <input class="input" id="webhook-url" type="url" inputmode="url" autocomplete="off" placeholder="https://discord.com/api/webhooks/...">
+                <input class="input" id="webhook-url" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://discord.com/api/webhooks/...">
                 <input class="input" id="favorite-name" maxlength="40" placeholder="Nombre para guardar" aria-label="Nombre de la favorita">
-                <button class="button" id="save-favorite" type="button">★ Guardar</button>
+                <button class="btn" id="save-favorite" type="button">
+                  <svg class="ic"><use href="#i-star"/></svg><span>Guardar</span>
+                </button>
               </div>
-              <p class="helper">La página comienza sin ninguna webhook guardada en el código.</p>
             </div>
-            <div class="favorite-box">
-              <div class="favorite-head">
-                <strong>Favoritas</strong>
+            <div class="fav-wrap">
+              <div class="fav-head">
+                <p class="caps">Favoritas</p>
                 <span class="counter" id="favorites-count">0 guardadas</span>
               </div>
-              <div class="favorites-list" id="favorites-list"></div>
-              <p class="empty-state" id="favorites-empty">Las webhooks que guardes aparecerán aquí.</p>
+              <div class="chips" id="favorites-list"></div>
+              <p class="empty" id="favorites-empty">Las webhooks que guardes aparecerán aquí.</p>
             </div>
           </div>
         </details>
 
-        <details class="tool-panel" open>
+        <details class="panel glass rise" style="--d:3" open>
           <summary>
-            <span class="tool-number">2</span>
-            <span class="tool-heading">
+            <span class="panel-num">02</span>
+            <span class="panel-heading">
               <strong>Contenido</strong>
-              <small>Título, descripción y ping</small>
+              <small>Título, descripción, color y ping</small>
             </span>
-            <span class="chevron" aria-hidden="true">⌃</span>
+            <svg class="ic chev" aria-hidden="true"><use href="#i-chevron"/></svg>
           </summary>
-          <div class="tool-body">
-            <div class="field-grid">
-              <div class="field full">
+          <div class="panel-body">
+            <div class="grid-2">
+              <div class="field span-2">
                 <div class="field-row">
                   <label for="message-title">Título</label>
                   <span class="counter" id="title-count">0 / 256</span>
                 </div>
                 <input class="input" id="message-title" maxlength="256" placeholder="Título del mensaje">
               </div>
-              <div class="field full">
+              <div class="field span-2">
                 <div class="field-row">
                   <label for="message-description">Descripción</label>
                   <span class="counter" id="description-count">0 / 4000</span>
@@ -1273,9 +2084,25 @@
               </div>
               <div class="field">
                 <span class="field-label">Color lateral</span>
-                <div class="color-control">
-                  <input id="message-color" type="color" value="#ed4245" aria-label="Color lateral">
-                  <output id="color-value" for="message-color">#ED4245</output>
+                <div class="color-row">
+                  <button class="swatch" type="button" style="--c:#ed4245" data-color="#ed4245" title="Rojo" aria-label="Rojo"></button>
+                  <button class="swatch" type="button" style="--c:#f57c1f" data-color="#f57c1f" title="Naranja" aria-label="Naranja"></button>
+                  <button class="swatch" type="button" style="--c:#fee75c" data-color="#fee75c" title="Amarillo" aria-label="Amarillo"></button>
+                  <button class="swatch" type="button" style="--c:#57f287" data-color="#57f287" title="Verde" aria-label="Verde"></button>
+                  <button class="swatch" type="button" style="--c:#1f8b4c" data-color="#1f8b4c" title="Verde oscuro" aria-label="Verde oscuro"></button>
+                  <button class="swatch" type="button" style="--c:#3fd5e0" data-color="#3fd5e0" title="Celeste" aria-label="Celeste"></button>
+                  <button class="swatch" type="button" style="--c:#3498db" data-color="#3498db" title="Azul" aria-label="Azul"></button>
+                  <button class="swatch" type="button" style="--c:#5865f2" data-color="#5865f2" title="Azul Discord" aria-label="Azul Discord"></button>
+                  <button class="swatch" type="button" style="--c:#9b59b6" data-color="#9b59b6" title="Morado" aria-label="Morado"></button>
+                  <button class="swatch" type="button" style="--c:#eb459e" data-color="#eb459e" title="Rosa" aria-label="Rosa"></button>
+                  <button class="swatch" type="button" style="--c:#8b5a2b" data-color="#8b5a2b" title="Café" aria-label="Café"></button>
+                  <button class="swatch" type="button" style="--c:#95a5a6" data-color="#95a5a6" title="Gris" aria-label="Gris"></button>
+                  <button class="swatch" type="button" style="--c:#ffffff" data-color="#ffffff" title="Blanco" aria-label="Blanco"></button>
+                  <button class="swatch dark" type="button" style="--c:#000000" data-color="#000000" title="Negro" aria-label="Negro"></button>
+                  <span class="color-custom">
+                    <input id="message-color" type="color" value="#ed4245" aria-label="Color personalizado">
+                    <output id="color-value" for="message-color">#ED4245</output>
+                  </span>
                 </div>
               </div>
               <div class="field">
@@ -1295,163 +2122,178 @@
           </div>
         </details>
 
-        <details class="tool-panel">
+        <details class="panel glass rise" style="--d:4">
           <summary>
-            <span class="tool-number">3</span>
-            <span class="tool-heading">
-              <strong>Imágenes y archivos</strong>
-              <small>Banner, miniatura y adjuntos</small>
+            <span class="panel-num">03</span>
+            <span class="panel-heading">
+              <strong>Imágenes</strong>
+              <small>Banner, miniatura e imágenes a tamaño original</small>
             </span>
-            <span class="chevron" aria-hidden="true">⌃</span>
+            <span class="panel-count" id="images-count">0 / 10</span>
+            <svg class="ic chev" aria-hidden="true"><use href="#i-chevron"/></svg>
           </summary>
-          <div class="tool-body">
-            <div class="media-grid">
-              <div class="media-card">
-                <div class="media-title">
+          <div class="panel-body">
+            <div class="slots">
+              <div class="slot">
+                <div class="slot-head">
                   <strong>Banner superior</strong>
-                  <span class="optional">Opcional</span>
+                  <span class="hint">Opcional</span>
                 </div>
-                <div class="field">
-                  <label for="banner-url">URL de imagen</label>
-                  <input class="input" id="banner-url" type="url" inputmode="url" placeholder="https://sitio.com/banner.png">
+                <div class="slot-line">
+                  <div class="mini" id="banner-mini"><svg class="ic"><use href="#i-image"/></svg><img alt=""></div>
+                  <input class="input" id="banner-url" type="url" inputmode="url" spellcheck="false" placeholder="https://sitio.com/banner.png" aria-label="URL del banner">
                 </div>
-                <div class="media-actions">
-                  <label class="button file-picker">
-                    Elegir de galería
+                <div class="actions">
+                  <label class="btn small picker">
+                    <svg class="ic"><use href="#i-upload"/></svg><span>Galería</span>
                     <input id="banner-file" type="file" accept="image/*">
                   </label>
-                  <button class="button ghost" id="clear-banner" type="button">Quitar</button>
+                  <button class="btn small ghost" id="clear-banner" type="button">Quitar</button>
                   <span class="file-state" id="banner-state">Sin archivo</span>
                 </div>
               </div>
-              <div class="media-card">
-                <div class="media-title">
+              <div class="slot">
+                <div class="slot-head">
                   <strong>Miniatura principal</strong>
-                  <span class="optional">Opcional</span>
+                  <span class="hint">Opcional</span>
                 </div>
-                <div class="field">
-                  <label for="thumbnail-url">URL de imagen</label>
-                  <input class="input" id="thumbnail-url" type="url" inputmode="url" placeholder="https://sitio.com/icono.png">
+                <div class="slot-line">
+                  <div class="mini" id="thumbnail-mini"><svg class="ic"><use href="#i-image"/></svg><img alt=""></div>
+                  <input class="input" id="thumbnail-url" type="url" inputmode="url" spellcheck="false" placeholder="https://sitio.com/icono.png" aria-label="URL de la miniatura">
                 </div>
-                <div class="media-actions">
-                  <label class="button file-picker">
-                    Elegir de galería
+                <div class="actions">
+                  <label class="btn small picker">
+                    <svg class="ic"><use href="#i-upload"/></svg><span>Galería</span>
                     <input id="thumbnail-file" type="file" accept="image/*">
                   </label>
-                  <button class="button ghost" id="clear-thumbnail" type="button">Quitar</button>
+                  <button class="btn small ghost" id="clear-thumbnail" type="button">Quitar</button>
                   <span class="file-state" id="thumbnail-state">Sin archivo</span>
                 </div>
               </div>
             </div>
-            <div class="attachments">
-              <div class="attachment-head">
-                <div>
-                  <strong>Archivos adjuntos</strong>
-                  <p class="helper">Se mostrarán como archivos dentro del mensaje.</p>
-                </div>
-                <label class="button file-picker">
-                  Adjuntar archivos
-                  <input id="extra-files" type="file" multiple>
-                </label>
+            <div class="divider"></div>
+            <div class="block-head">
+              <div>
+                <strong>Imágenes a tamaño original</strong>
+                <p class="helper">Se muestran completas dentro del mensaje, sin recortes.</p>
               </div>
-              <div class="file-list" id="file-list"></div>
+              <button class="btn primary small" id="add-image" type="button">
+                <svg class="ic"><use href="#i-plus"/></svg><span>Añadir imagen</span>
+              </button>
             </div>
+            <div class="list" id="image-list"></div>
+            <p class="empty" id="images-empty">No hay imágenes añadidas.</p>
           </div>
         </details>
 
-        <details class="tool-panel">
+        <details class="panel glass rise" style="--d:5">
           <summary>
-            <span class="tool-number">4</span>
-            <span class="tool-heading">
+            <span class="panel-num">04</span>
+            <span class="panel-heading">
               <strong>Secciones</strong>
-              <small>Bloques de texto con imagen individual</small>
+              <small>Bloques de texto con miniatura propia</small>
             </span>
-            <span class="tool-count" id="sections-count">0 / 8</span>
-            <span class="chevron" aria-hidden="true">⌃</span>
+            <span class="panel-count" id="sections-count">0 / 8</span>
+            <svg class="ic chev" aria-hidden="true"><use href="#i-chevron"/></svg>
           </summary>
-          <div class="tool-body">
-            <div class="section-toolbar">
+          <div class="panel-body">
+            <div class="block-head">
               <p class="helper">No necesitan título. Cada una puede llevar su propia miniatura.</p>
-              <button class="button primary" id="add-section" type="button">＋ Añadir sección</button>
+              <button class="btn primary small" id="add-section" type="button">
+                <svg class="ic"><use href="#i-plus"/></svg><span>Añadir sección</span>
+              </button>
             </div>
-            <div class="section-list" id="section-list"></div>
-            <p class="empty-state" id="sections-empty">No hay secciones añadidas.</p>
+            <div class="list" id="section-list"></div>
+            <p class="empty" id="sections-empty">No hay secciones añadidas.</p>
           </div>
         </details>
 
-        <details class="tool-panel">
+        <details class="panel glass rise" style="--d:6">
           <summary>
-            <span class="tool-number">5</span>
-            <span class="tool-heading">
+            <span class="panel-num">05</span>
+            <span class="panel-heading">
               <strong>Botones</strong>
-              <small>Enlaces grises bajo el contenido</small>
+              <small>Enlaces bajo el contenido</small>
             </span>
-            <span class="tool-count" id="buttons-count">0 / 25</span>
-            <span class="chevron" aria-hidden="true">⌃</span>
+            <span class="panel-count" id="buttons-count">0 / 25</span>
+            <svg class="ic chev" aria-hidden="true"><use href="#i-chevron"/></svg>
           </summary>
-          <div class="tool-body">
-            <div class="section-toolbar">
+          <div class="panel-body">
+            <div class="block-head">
               <p class="helper">Discord agrupa hasta cinco botones por fila.</p>
-              <button class="button primary" id="add-button" type="button">＋ Añadir botón</button>
+              <button class="btn primary small" id="add-button" type="button">
+                <svg class="ic"><use href="#i-plus"/></svg><span>Añadir botón</span>
+              </button>
             </div>
-            <div class="button-list" id="button-list"></div>
-            <p class="empty-state" id="buttons-empty">No hay botones añadidos.</p>
+            <div class="list" id="button-list"></div>
+            <p class="empty" id="buttons-empty">No hay botones añadidos.</p>
           </div>
         </details>
 
-        <section class="send-panel" aria-label="Enviar mensaje">
-          <p class="form-message" id="form-message" role="status" aria-live="polite">La vista previa se actualiza automáticamente.</p>
-          <div class="send-actions">
-            <button class="button ghost" id="clear-builder" type="button">Limpiar</button>
-            <button class="button send" id="send-button" type="submit">Enviar a Discord</button>
+        <details class="panel glass rise" style="--d:7">
+          <summary>
+            <span class="panel-num">06</span>
+            <span class="panel-heading">
+              <strong>Archivos</strong>
+              <small>Adjuntos que se muestran dentro del mensaje</small>
+            </span>
+            <span class="panel-count" id="files-count">0</span>
+            <svg class="ic chev" aria-hidden="true"><use href="#i-chevron"/></svg>
+          </summary>
+          <div class="panel-body">
+            <div class="block-head">
+              <p class="helper">Hasta 10 archivos en total, contando las imágenes subidas.</p>
+              <label class="btn small picker">
+                <svg class="ic"><use href="#i-paperclip"/></svg><span>Adjuntar archivos</span>
+                <input id="extra-files" type="file" multiple>
+              </label>
+            </div>
+            <div class="file-chips" id="file-list"></div>
+          </div>
+        </details>
+
+        <section class="dock glass rise" style="--d:8" id="dock" aria-label="Enviar mensaje">
+          <p class="form-message" id="form-message" role="status" aria-live="polite">La vista previa se actualiza al escribir.</p>
+          <div class="dock-actions">
+            <button class="btn ghost" id="clear-builder" type="button">
+              <svg class="ic"><use href="#i-refresh"/></svg><span>Limpiar</span>
+            </button>
+            <button class="btn primary" type="submit" data-send>
+              <svg class="ic"><use href="#i-send"/></svg><span>Enviar a Discord</span>
+            </button>
           </div>
         </section>
       </form>
 
-      <aside class="preview-column">
-        <section class="preview-panel">
+      <aside class="preview-col">
+        <section class="preview-panel glass rise" style="--d:3" aria-label="Vista previa">
           <div class="preview-head">
-            <strong>Vista previa</strong>
+            <p class="caps">Vista previa</p>
             <span id="component-count">1 componente</span>
           </div>
-          <div class="discord-stage">
-            <div class="discord-message">
-              <div class="avatar" aria-hidden="true">WH</div>
-              <div class="message-body">
-                <div class="message-meta">
+          <div class="stage">
+            <div class="msg">
+              <div class="avatar" aria-hidden="true">
+                <svg viewBox="0 0 100 100"><use href="#plane-art"/></svg>
+              </div>
+              <div class="msg-body">
+                <div class="msg-meta">
                   <strong>Webhook</strong>
                   <span class="app-tag">APP</span>
-                  <time>ahora</time>
+                  <time>Hoy a las <span id="preview-time">00:00</span></time>
                 </div>
-                <article class="component-container" id="component-preview">
-                  <div class="preview-banner" id="preview-banner-wrap" hidden>
-                    <img id="preview-banner" alt="Banner del mensaje">
-                  </div>
-                  <div class="component-inner">
-                    <div class="ping-preview" id="preview-ping" hidden>@everyone</div>
-                    <div class="main-preview" id="main-preview">
-                      <h2 class="preview-title placeholder" id="preview-title">Título del mensaje</h2>
-                      <p class="preview-description placeholder" id="preview-description">La descripción aparecerá aquí.</p>
-                      <div class="preview-thumbnail" id="preview-thumbnail-wrap" hidden>
-                        <img id="preview-thumbnail" alt="Miniatura principal">
-                      </div>
-                    </div>
-                    <div id="preview-sections"></div>
-                    <div id="preview-buttons-area" hidden>
-                      <div class="preview-separator"></div>
-                      <div class="preview-buttons" id="preview-buttons"></div>
-                    </div>
-                    <div id="preview-files-area" hidden>
-                      <div class="preview-separator"></div>
-                      <div class="preview-files" id="preview-files"></div>
-                    </div>
-                  </div>
-                </article>
+                <article class="container" id="component-preview"></article>
               </div>
             </div>
           </div>
-          <details class="payload">
-            <summary>Ver JSON</summary>
+          <details class="json">
+            <summary>
+              <span><svg class="ic"><use href="#i-code"/></svg>Ver JSON</span>
+              <span>
+                <button class="btn small ghost" type="button" data-copy-json><svg class="ic"><use href="#i-copy"/></svg><span>Copiar</span></button>
+                <svg class="ic chev" aria-hidden="true"><use href="#i-chevron"/></svg>
+              </span>
+            </summary>
             <pre id="payload-preview"></pre>
           </details>
         </section>
@@ -1459,68 +2301,112 @@
     </div>
   </main>
 
+  <svg class="flyer" id="flyer" viewBox="0 0 100 100" aria-hidden="true"><use href="#plane-art"/></svg>
+
   <script>
+    const NS = "http://www.w3.org/2000/svg";
     const favoritesKey = "embed-dispatch-favorites";
     const maxSections = 8;
     const maxButtons = 25;
+    const maxImages = 10;
     const maxFiles = 10;
-    const form = document.querySelector("#builder-form");
-    const webhookUrl = document.querySelector("#webhook-url");
-    const favoriteName = document.querySelector("#favorite-name");
-    const saveFavoriteButton = document.querySelector("#save-favorite");
-    const favoritesList = document.querySelector("#favorites-list");
-    const favoritesEmpty = document.querySelector("#favorites-empty");
-    const favoritesCount = document.querySelector("#favorites-count");
-    const connectionState = document.querySelector("#connection-state");
-    const titleInput = document.querySelector("#message-title");
-    const descriptionInput = document.querySelector("#message-description");
-    const colorInput = document.querySelector("#message-color");
-    const pingInput = document.querySelector("#ping-everyone");
-    const titleCount = document.querySelector("#title-count");
-    const descriptionCount = document.querySelector("#description-count");
-    const colorValue = document.querySelector("#color-value");
-    const bannerUrl = document.querySelector("#banner-url");
-    const bannerFile = document.querySelector("#banner-file");
-    const bannerState = document.querySelector("#banner-state");
-    const thumbnailUrl = document.querySelector("#thumbnail-url");
-    const thumbnailFile = document.querySelector("#thumbnail-file");
-    const thumbnailState = document.querySelector("#thumbnail-state");
-    const extraFiles = document.querySelector("#extra-files");
-    const fileList = document.querySelector("#file-list");
-    const sectionList = document.querySelector("#section-list");
-    const sectionsEmpty = document.querySelector("#sections-empty");
-    const sectionsCount = document.querySelector("#sections-count");
-    const addSectionButton = document.querySelector("#add-section");
-    const buttonList = document.querySelector("#button-list");
-    const buttonsEmpty = document.querySelector("#buttons-empty");
-    const buttonsCount = document.querySelector("#buttons-count");
-    const addButtonButton = document.querySelector("#add-button");
-    const clearBuilderButton = document.querySelector("#clear-builder");
-    const sendButton = document.querySelector("#send-button");
-    const formMessage = document.querySelector("#form-message");
-    const componentPreview = document.querySelector("#component-preview");
-    const previewBannerWrap = document.querySelector("#preview-banner-wrap");
-    const previewBanner = document.querySelector("#preview-banner");
-    const previewPing = document.querySelector("#preview-ping");
-    const mainPreview = document.querySelector("#main-preview");
-    const previewTitle = document.querySelector("#preview-title");
-    const previewDescription = document.querySelector("#preview-description");
-    const previewThumbnailWrap = document.querySelector("#preview-thumbnail-wrap");
-    const previewThumbnail = document.querySelector("#preview-thumbnail");
-    const previewSections = document.querySelector("#preview-sections");
-    const previewButtonsArea = document.querySelector("#preview-buttons-area");
-    const previewButtons = document.querySelector("#preview-buttons");
-    const previewFilesArea = document.querySelector("#preview-files-area");
-    const previewFiles = document.querySelector("#preview-files");
-    const payloadPreview = document.querySelector("#payload-preview");
-    const componentCount = document.querySelector("#component-count");
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    function $(selector) {
+      return document.querySelector(selector);
+    }
+
+    const form = $("#builder-form");
+    const webhookUrl = $("#webhook-url");
+    const favoriteName = $("#favorite-name");
+    const saveFavoriteButton = $("#save-favorite");
+    const favoritesList = $("#favorites-list");
+    const favoritesEmpty = $("#favorites-empty");
+    const favoritesCount = $("#favorites-count");
+    const connectionState = $("#connection-state");
+    const connectionText = $("#connection-text");
+    const titleInput = $("#message-title");
+    const descriptionInput = $("#message-description");
+    const colorInput = $("#message-color");
+    const colorValue = $("#color-value");
+    const swatches = Array.from(document.querySelectorAll(".swatch"));
+    const pingInput = $("#ping-everyone");
+    const titleCount = $("#title-count");
+    const descriptionCount = $("#description-count");
+    const bannerUrl = $("#banner-url");
+    const bannerFile = $("#banner-file");
+    const bannerState = $("#banner-state");
+    const bannerMini = $("#banner-mini");
+    const thumbnailUrl = $("#thumbnail-url");
+    const thumbnailFile = $("#thumbnail-file");
+    const thumbnailState = $("#thumbnail-state");
+    const thumbnailMini = $("#thumbnail-mini");
+    const imageList = $("#image-list");
+    const imagesEmpty = $("#images-empty");
+    const imagesCount = $("#images-count");
+    const addImageButton = $("#add-image");
+    const extraFiles = $("#extra-files");
+    const fileList = $("#file-list");
+    const filesCount = $("#files-count");
+    const sectionList = $("#section-list");
+    const sectionsEmpty = $("#sections-empty");
+    const sectionsCount = $("#sections-count");
+    const addSectionButton = $("#add-section");
+    const buttonList = $("#button-list");
+    const buttonsEmpty = $("#buttons-empty");
+    const buttonsCount = $("#buttons-count");
+    const addButtonButton = $("#add-button");
+    const clearBuilderButton = $("#clear-builder");
+    const sendButtons = Array.from(document.querySelectorAll("[data-send]"));
+    const copyButtons = Array.from(document.querySelectorAll("[data-copy-json]"));
+    const formMessage = $("#form-message");
+    const dock = $("#dock");
+    const componentPreview = $("#component-preview");
+    const componentCount = $("#component-count");
+    const payloadPreview = $("#payload-preview");
+    const previewTime = $("#preview-time");
+    const metaComponents = $("#meta-components");
+    const metaFiles = $("#meta-files");
+    const flyer = $("#flyer");
+
     let sections = [];
     let linkButtons = [];
+    let images = [];
     let nextSectionId = 1;
     let nextButtonId = 1;
+    let nextImageId = 1;
+    let justAdded = "";
     let bannerObjectUrl = "";
     let thumbnailObjectUrl = "";
     let favorites = loadFavorites();
+    let lastConnection = "";
+
+    function icon(name) {
+      const svg = document.createElementNS(NS, "svg");
+      svg.setAttribute("class", "ic");
+      svg.setAttribute("aria-hidden", "true");
+      const use = document.createElementNS(NS, "use");
+      use.setAttribute("href", "#i-" + name);
+      svg.append(use);
+      return svg;
+    }
+
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) {
+        node.className = className;
+      }
+      if (text !== undefined) {
+        node.textContent = text;
+      }
+      return node;
+    }
+
+    function restart(node, className) {
+      node.classList.remove(className);
+      void node.offsetWidth;
+      node.classList.add(className);
+    }
 
     function isHttpUrl(value) {
       try {
@@ -1544,6 +2430,10 @@
     function setMessage(text, type) {
       formMessage.textContent = text;
       formMessage.className = "form-message" + (type ? " " + type : "");
+      restart(formMessage, "bump");
+      if (type === "error") {
+        restart(dock, "shake");
+      }
     }
 
     function loadFavorites() {
@@ -1580,16 +2470,22 @@
 
     function updateConnection() {
       const value = webhookUrl.value.trim();
-      connectionState.className = "connection";
-      if (!value) {
-        connectionState.textContent = "Sin webhook";
-      } else if (isWebhookUrl(value)) {
-        connectionState.textContent = "Webhook lista";
-        connectionState.classList.add("ready");
-      } else {
-        connectionState.textContent = "URL inválida";
-        connectionState.classList.add("invalid");
+      let state = "empty";
+      let text = "Sin webhook";
+      if (value && isWebhookUrl(value)) {
+        state = "ready";
+        text = "Webhook lista";
+      } else if (value) {
+        state = "invalid";
+        text = "URL inválida";
       }
+      connectionText.textContent = text;
+      connectionState.classList.toggle("ready", state === "ready");
+      connectionState.classList.toggle("invalid", state === "invalid");
+      if (lastConnection && lastConnection !== state) {
+        restart(connectionState, "changed");
+      }
+      lastConnection = state;
       renderFavorites();
     }
 
@@ -1600,50 +2496,39 @@
       const active = webhookUrl.value.trim();
 
       favorites.forEach(function (favorite) {
-        const item = document.createElement("article");
-        item.className = "favorite-item" + (favorite.url === active ? " active" : "");
-        const star = document.createElement("span");
-        star.className = "star";
-        star.textContent = "★";
-        star.setAttribute("aria-hidden", "true");
-        const copy = document.createElement("div");
-        copy.className = "favorite-copy";
-        const name = document.createElement("strong");
-        name.textContent = favorite.name;
-        const url = document.createElement("small");
-        url.textContent = maskWebhook(favorite.url);
-        copy.append(name, url);
-        const actions = document.createElement("div");
-        actions.className = "favorite-actions";
-        const use = document.createElement("button");
+        const chip = el("div", "chip" + (favorite.url === active ? " active" : ""));
+        if (justAdded === "fav:" + favorite.url) {
+          chip.classList.add("enter");
+        }
+        const use = el("button", "chip-use");
         use.type = "button";
-        use.className = "icon-button";
-        use.title = "Usar webhook";
-        use.setAttribute("aria-label", "Usar " + favorite.name);
-        use.textContent = "↗";
+        use.title = maskWebhook(favorite.url);
+        use.append(icon("star"), el("span", "", favorite.name));
         use.addEventListener("click", function () {
           webhookUrl.value = favorite.url;
           updateConnection();
-          setMessage("Webhook favorita cargada.", "success");
+          setMessage("Webhook \"" + favorite.name + "\" cargada.", "success");
         });
-        const remove = document.createElement("button");
+        const remove = el("button", "chip-del");
         remove.type = "button";
-        remove.className = "icon-button danger";
-        remove.title = "Eliminar favorita";
         remove.setAttribute("aria-label", "Eliminar " + favorite.name);
-        remove.textContent = "×";
+        remove.append(icon("x"));
         remove.addEventListener("click", function () {
-          favorites = favorites.filter(function (itemValue) {
-            return itemValue.url !== favorite.url;
+          leave(chip, function () {
+            favorites = favorites.filter(function (item) {
+              return item.url !== favorite.url;
+            });
+            storeFavorites();
+            renderFavorites();
+            setMessage("Favorita eliminada.", "success");
           });
-          storeFavorites();
-          renderFavorites();
-          setMessage("Favorita eliminada.", "success");
         });
-        actions.append(use, remove);
-        item.append(star, copy, actions);
-        favoritesList.append(item);
+        chip.append(use, remove);
+        favoritesList.append(chip);
       });
+      if (justAdded.indexOf("fav:") === 0) {
+        justAdded = "";
+      }
     }
 
     function saveFavorite() {
@@ -1673,17 +2558,23 @@
         return;
       }
       favoriteName.value = "";
+      justAdded = "fav:" + url;
       renderFavorites();
       setMessage("Webhook guardada en favoritas.", "success");
     }
 
-    function safeFileName(name) {
-      const cleaned = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
-      return cleaned || "archivo";
+    function leave(node, done) {
+      if (reduceMotion.matches) {
+        done();
+        return;
+      }
+      node.classList.add("leave");
+      setTimeout(done, 230);
     }
 
-    function attachmentName(kind, file) {
-      return kind + "-" + safeFileName(file.name);
+    function safeFileName(name) {
+      const cleaned = name.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
+      return cleaned || "archivo";
     }
 
     function formatBytes(bytes) {
@@ -1696,31 +2587,39 @@
       return (bytes / 1048576).toFixed(1) + " MB";
     }
 
-    function createFileChip(file) {
-      const chip = document.createElement("span");
-      chip.className = "file-chip";
-      const icon = document.createElement("span");
-      icon.textContent = "▣";
-      icon.setAttribute("aria-hidden", "true");
-      const text = document.createElement("span");
-      text.textContent = file.name + " · " + formatBytes(file.size);
-      chip.append(icon, text);
-      return chip;
+    function setMini(box, source) {
+      const image = box.querySelector("img");
+      if (!source) {
+        image.removeAttribute("src");
+        box.classList.remove("has-img");
+        return;
+      }
+      if (image.getAttribute("src") === source) {
+        return;
+      }
+      box.classList.remove("has-img");
+      image.onload = function () {
+        box.classList.add("has-img");
+      };
+      image.onerror = function () {
+        box.classList.remove("has-img");
+      };
+      image.src = source;
     }
 
     function renderExtraFiles() {
       fileList.textContent = "";
       const files = Array.from(extraFiles.files);
+      filesCount.textContent = String(files.length);
       if (!files.length) {
-        const empty = document.createElement("span");
-        empty.className = "helper";
-        empty.textContent = "Sin archivos adjuntos";
-        fileList.append(empty);
-      } else {
-        files.forEach(function (file) {
-          fileList.append(createFileChip(file));
-        });
+        fileList.append(el("span", "helper", "Sin archivos adjuntos"));
+        return;
       }
+      files.forEach(function (file) {
+        const chip = el("span", "file-chip");
+        chip.append(icon("file"), el("span", "", file.name + " · " + formatBytes(file.size)));
+        fileList.append(chip);
+      });
     }
 
     function syncMainMedia(kind) {
@@ -1743,8 +2642,9 @@
     }
 
     function clearMainMedia(kind) {
-      const input = kind === "banner" ? bannerFile : thumbnailFile;
-      input.value = "";
+      const isBanner = kind === "banner";
+      (isBanner ? bannerFile : thumbnailFile).value = "";
+      (isBanner ? bannerUrl : thumbnailUrl).value = "";
       syncMainMedia(kind);
     }
 
@@ -1753,7 +2653,7 @@
       const file = (isBanner ? bannerFile : thumbnailFile).files[0];
       const rawUrl = (isBanner ? bannerUrl : thumbnailUrl).value.trim();
       if (file) {
-        return { url: "attachment://" + attachmentName(kind, file) };
+        return { url: "attachment://" + kind + "-" + safeFileName(file.name) };
       }
       return isHttpUrl(rawUrl) ? { url: rawUrl } : null;
     }
@@ -1768,42 +2668,162 @@
       return isHttpUrl(rawUrl) ? rawUrl : "";
     }
 
+    function itemMediaName(prefix, item) {
+      return prefix + "-" + item.id + "-" + safeFileName(item.file.name);
+    }
+
+    function itemMediaPayload(prefix, item) {
+      if (item.file) {
+        return { url: "attachment://" + itemMediaName(prefix, item) };
+      }
+      const raw = item.imageUrl.trim();
+      return isHttpUrl(raw) ? { url: raw } : null;
+    }
+
+    function itemMediaPreview(item) {
+      if (item.file) {
+        return item.previewUrl;
+      }
+      const raw = item.imageUrl.trim();
+      return isHttpUrl(raw) ? raw : "";
+    }
+
+    function releaseItem(item) {
+      if (item.previewUrl) {
+        URL.revokeObjectURL(item.previewUrl);
+      }
+      item.previewUrl = "";
+    }
+
+    function buildMediaEditor(item, prefix, rerender, options) {
+      const wrap = el("div", "field");
+      const line = el("div", "slot-line");
+      const mini = el("div", "mini");
+      mini.append(icon("image"), document.createElement("img"));
+      mini.querySelector("img").alt = "";
+      const urlInput = el("input", "input");
+      urlInput.id = prefix + "-image-" + item.id;
+      urlInput.type = "url";
+      urlInput.inputMode = "url";
+      urlInput.spellcheck = false;
+      urlInput.placeholder = options.placeholder;
+      urlInput.setAttribute("aria-label", options.label);
+      urlInput.value = item.imageUrl;
+      urlInput.addEventListener("input", function () {
+        item.imageUrl = urlInput.value;
+        setMini(mini, itemMediaPreview(item));
+        if (options.onChange) {
+          options.onChange();
+        }
+        updatePreview();
+      });
+      line.append(mini, urlInput);
+      const actions = el("div", "actions");
+      const picker = el("label", "btn small picker");
+      picker.append(icon("upload"), el("span", "", "Galería"));
+      const fileInput = document.createElement("input");
+      fileInput.type = "file";
+      fileInput.accept = "image/*";
+      fileInput.addEventListener("change", function () {
+        releaseItem(item);
+        item.file = fileInput.files[0] || null;
+        item.previewUrl = item.file ? URL.createObjectURL(item.file) : "";
+        rerender();
+        updatePreview();
+      });
+      picker.append(fileInput);
+      const clear = el("button", "btn small ghost", "Quitar imagen");
+      clear.type = "button";
+      clear.addEventListener("click", function () {
+        releaseItem(item);
+        item.file = null;
+        item.imageUrl = "";
+        rerender();
+        updatePreview();
+      });
+      const state = el("span", "file-state", item.file ? item.file.name + " · " + formatBytes(item.file.size) : "Sin archivo");
+      actions.append(picker, clear, state);
+      wrap.append(line, actions);
+      setMini(mini, itemMediaPreview(item));
+      return wrap;
+    }
+
+    function itemHead(index, title, meta, onRemove) {
+      const head = el("div", "item-head");
+      const number = el("span", "item-index", String(index + 1));
+      const name = el("span", "item-title", title);
+      const status = el("span", "item-meta", meta || "");
+      const remove = el("button", "remove");
+      remove.type = "button";
+      remove.append(icon("trash"), el("span", "", "Quitar"));
+      remove.addEventListener("click", onRemove);
+      head.append(number, name, status, remove);
+      return { head: head, status: status };
+    }
+
+    function addImage() {
+      if (images.length >= maxImages) {
+        setMessage("Puedes añadir hasta " + maxImages + " imágenes.", "error");
+        return;
+      }
+      const item = { id: nextImageId++, imageUrl: "", file: null, previewUrl: "" };
+      images.push(item);
+      justAdded = "img:" + item.id;
+      renderImagesEditor();
+      updatePreview();
+      const input = document.querySelector("#full-image-" + item.id);
+      if (input) {
+        input.focus({ preventScroll: true });
+      }
+    }
+
+    function renderImagesEditor() {
+      imageList.textContent = "";
+      imagesEmpty.hidden = images.length > 0;
+      imagesCount.textContent = images.length + " / " + maxImages;
+      addImageButton.disabled = images.length >= maxImages;
+      images.forEach(function (item, index) {
+        const row = el("div", "item" + (justAdded === "img:" + item.id ? " enter" : ""));
+        const parts = itemHead(index, "Imagen " + (index + 1), "", function () {
+          leave(row, function () {
+            releaseItem(item);
+            images = images.filter(function (other) {
+              return other.id !== item.id;
+            });
+            renderImagesEditor();
+            updatePreview();
+          });
+        });
+        const refreshMeta = function () {
+          parts.status.textContent = itemMediaPreview(item) ? "Lista" : "Sin imagen";
+        };
+        refreshMeta();
+        row.append(parts.head, buildMediaEditor(item, "full", renderImagesEditor, {
+          placeholder: "https://sitio.com/imagen.png",
+          label: "URL de la imagen " + (index + 1),
+          onChange: refreshMeta
+        }));
+        imageList.append(row);
+      });
+      if (justAdded.indexOf("img:") === 0) {
+        justAdded = "";
+      }
+    }
+
     function addSection() {
       if (sections.length >= maxSections) {
         setMessage("Puedes añadir hasta " + maxSections + " secciones.", "error");
         return;
       }
-      sections.push({
-        id: nextSectionId++,
-        body: "",
-        imageUrl: "",
-        file: null,
-        previewUrl: "",
-        open: true
-      });
+      const item = { id: nextSectionId++, body: "", imageUrl: "", file: null, previewUrl: "" };
+      sections.push(item);
+      justAdded = "sec:" + item.id;
       renderSectionsEditor();
       updatePreview();
-    }
-
-    function clearSectionFile(section) {
-      if (section.previewUrl) {
-        URL.revokeObjectURL(section.previewUrl);
+      const input = document.querySelector("#section-body-" + item.id);
+      if (input) {
+        input.focus({ preventScroll: true });
       }
-      section.file = null;
-      section.previewUrl = "";
-      renderSectionsEditor();
-      updatePreview();
-    }
-
-    function removeSection(section) {
-      if (section.previewUrl) {
-        URL.revokeObjectURL(section.previewUrl);
-      }
-      sections = sections.filter(function (item) {
-        return item.id !== section.id;
-      });
-      renderSectionsEditor();
-      updatePreview();
     }
 
     function renderSectionsEditor() {
@@ -1813,45 +2833,25 @@
       addSectionButton.disabled = sections.length >= maxSections;
 
       sections.forEach(function (section, index) {
-        const card = document.createElement("details");
-        card.className = "section-card";
-        card.open = section.open;
-        card.addEventListener("toggle", function () {
-          section.open = card.open;
+        const row = el("div", "item" + (justAdded === "sec:" + section.id ? " enter" : ""));
+        const parts = itemHead(index, "Sección " + (index + 1), "", function () {
+          leave(row, function () {
+            releaseItem(section);
+            sections = sections.filter(function (item) {
+              return item.id !== section.id;
+            });
+            renderSectionsEditor();
+            updatePreview();
+          });
         });
-        const summary = document.createElement("summary");
-        const number = document.createElement("span");
-        number.className = "section-index";
-        number.textContent = String(index + 1);
-        const label = document.createElement("span");
-        label.className = "section-label";
-        label.textContent = "Sección " + (index + 1);
-        const status = document.createElement("span");
-        status.className = "section-status";
-        status.textContent = section.file || isHttpUrl(section.imageUrl) ? "Con imagen" : "Sin imagen";
-        const remove = document.createElement("button");
-        remove.type = "button";
-        remove.className = "remove";
-        remove.textContent = "Quitar";
-        remove.addEventListener("click", function (event) {
-          event.preventDefault();
-          event.stopPropagation();
-          removeSection(section);
-        });
-        const chevron = document.createElement("span");
-        chevron.className = "section-chevron";
-        chevron.textContent = "⌃";
-        summary.append(number, label, status, remove, chevron);
-
-        const content = document.createElement("div");
-        content.className = "section-content";
-        const bodyField = document.createElement("div");
-        bodyField.className = "field";
-        const bodyLabel = document.createElement("label");
+        const refreshMeta = function () {
+          parts.status.textContent = itemMediaPreview(section) ? "Con imagen" : "Sin imagen";
+        };
+        refreshMeta();
+        const bodyField = el("div", "field");
+        const bodyLabel = el("label", "", "Contenido");
         bodyLabel.htmlFor = "section-body-" + section.id;
-        bodyLabel.textContent = "Contenido";
-        const body = document.createElement("textarea");
-        body.className = "textarea";
+        const body = el("textarea", "textarea");
         body.id = "section-body-" + section.id;
         body.maxLength = 4000;
         body.placeholder = "Escribe la información de esta sección...";
@@ -1861,61 +2861,19 @@
           updatePreview();
         });
         bodyField.append(bodyLabel, body);
-
-        const media = document.createElement("div");
-        media.className = "section-media";
-        const mediaField = document.createElement("div");
-        mediaField.className = "field";
-        const mediaLabel = document.createElement("label");
-        mediaLabel.htmlFor = "section-image-" + section.id;
-        mediaLabel.textContent = "Imagen pequeña opcional";
-        const imageUrl = document.createElement("input");
-        imageUrl.className = "input";
-        imageUrl.id = "section-image-" + section.id;
-        imageUrl.type = "url";
-        imageUrl.inputMode = "url";
-        imageUrl.placeholder = "https://sitio.com/icono.png";
-        imageUrl.value = section.imageUrl;
-        imageUrl.addEventListener("input", function () {
-          section.imageUrl = imageUrl.value;
-          updatePreview();
+        const mediaLabel = el("span", "field-label", "Miniatura opcional");
+        const media = buildMediaEditor(section, "section", renderSectionsEditor, {
+          placeholder: "https://sitio.com/icono.png",
+          label: "URL de la miniatura de la sección " + (index + 1),
+          onChange: refreshMeta
         });
-        mediaField.append(mediaLabel, imageUrl);
-
-        const actions = document.createElement("div");
-        actions.className = "media-actions";
-        const picker = document.createElement("label");
-        picker.className = "button file-picker";
-        picker.textContent = "Elegir de galería";
-        const fileInput = document.createElement("input");
-        fileInput.type = "file";
-        fileInput.accept = "image/*";
-        fileInput.addEventListener("change", function () {
-          if (section.previewUrl) {
-            URL.revokeObjectURL(section.previewUrl);
-          }
-          section.file = fileInput.files[0] || null;
-          section.previewUrl = section.file ? URL.createObjectURL(section.file) : "";
-          renderSectionsEditor();
-          updatePreview();
-        });
-        picker.append(fileInput);
-        const clear = document.createElement("button");
-        clear.type = "button";
-        clear.className = "button ghost";
-        clear.textContent = "Quitar imagen";
-        clear.addEventListener("click", function () {
-          clearSectionFile(section);
-        });
-        const fileState = document.createElement("span");
-        fileState.className = "file-state";
-        fileState.textContent = section.file ? section.file.name : "Sin archivo";
-        actions.append(picker, clear, fileState);
-        media.append(mediaField, actions);
-        content.append(bodyField, media);
-        card.append(summary, content);
-        sectionList.append(card);
+        media.prepend(mediaLabel);
+        row.append(parts.head, bodyField, media);
+        sectionList.append(row);
       });
+      if (justAdded.indexOf("sec:") === 0) {
+        justAdded = "";
+      }
     }
 
     function addLinkButton() {
@@ -1923,9 +2881,15 @@
         setMessage("Puedes añadir hasta " + maxButtons + " botones.", "error");
         return;
       }
-      linkButtons.push({ id: nextButtonId++, label: "", url: "" });
+      const item = { id: nextButtonId++, label: "", url: "" };
+      linkButtons.push(item);
+      justAdded = "btn:" + item.id;
       renderButtonsEditor();
       updatePreview();
+      const input = document.querySelector("#button-label-" + item.id);
+      if (input) {
+        input.focus({ preventScroll: true });
+      }
     }
 
     function renderButtonsEditor() {
@@ -1935,33 +2899,21 @@
       addButtonButton.disabled = linkButtons.length >= maxButtons;
 
       linkButtons.forEach(function (linkButton, index) {
-        const card = document.createElement("div");
-        card.className = "button-card";
-        const head = document.createElement("div");
-        head.className = "button-card-head";
-        const name = document.createElement("strong");
-        name.textContent = "Botón " + (index + 1);
-        const remove = document.createElement("button");
-        remove.type = "button";
-        remove.className = "remove";
-        remove.textContent = "Quitar";
-        remove.addEventListener("click", function () {
-          linkButtons = linkButtons.filter(function (item) {
-            return item.id !== linkButton.id;
+        const row = el("div", "item" + (justAdded === "btn:" + linkButton.id ? " enter" : ""));
+        const parts = itemHead(index, "Botón " + (index + 1), "", function () {
+          leave(row, function () {
+            linkButtons = linkButtons.filter(function (item) {
+              return item.id !== linkButton.id;
+            });
+            renderButtonsEditor();
+            updatePreview();
           });
-          renderButtonsEditor();
-          updatePreview();
         });
-        head.append(name, remove);
-        const fields = document.createElement("div");
-        fields.className = "button-fields";
-        const labelField = document.createElement("div");
-        labelField.className = "field";
-        const labelLabel = document.createElement("label");
+        const fields = el("div", "button-fields");
+        const labelField = el("div", "field");
+        const labelLabel = el("label", "", "Texto");
         labelLabel.htmlFor = "button-label-" + linkButton.id;
-        labelLabel.textContent = "Texto";
-        const labelInput = document.createElement("input");
-        labelInput.className = "input";
+        const labelInput = el("input", "input");
         labelInput.id = "button-label-" + linkButton.id;
         labelInput.maxLength = 80;
         labelInput.placeholder = "Abrir enlace";
@@ -1971,16 +2923,14 @@
           updatePreview();
         });
         labelField.append(labelLabel, labelInput);
-        const urlField = document.createElement("div");
-        urlField.className = "field";
-        const urlLabel = document.createElement("label");
+        const urlField = el("div", "field");
+        const urlLabel = el("label", "", "URL");
         urlLabel.htmlFor = "button-url-" + linkButton.id;
-        urlLabel.textContent = "URL";
-        const urlInput = document.createElement("input");
-        urlInput.className = "input";
+        const urlInput = el("input", "input");
         urlInput.id = "button-url-" + linkButton.id;
         urlInput.type = "url";
         urlInput.inputMode = "url";
+        urlInput.spellcheck = false;
         urlInput.maxLength = 512;
         urlInput.placeholder = "https://sitio.com";
         urlInput.value = linkButton.url;
@@ -1990,28 +2940,23 @@
         });
         urlField.append(urlLabel, urlInput);
         fields.append(labelField, urlField);
-        card.append(head, fields);
-        buttonList.append(card);
+        row.append(parts.head, fields);
+        buttonList.append(row);
       });
-    }
-
-    function sectionMediaPayload(section) {
-      if (section.file) {
-        return { url: "attachment://section-" + section.id + "-" + safeFileName(section.file.name) };
+      if (justAdded.indexOf("btn:") === 0) {
+        justAdded = "";
       }
-      return isHttpUrl(section.imageUrl.trim()) ? { url: section.imageUrl.trim() } : null;
-    }
-
-    function sectionMediaPreview(section) {
-      if (section.file) {
-        return section.previewUrl;
-      }
-      return isHttpUrl(section.imageUrl.trim()) ? section.imageUrl.trim() : "";
     }
 
     function cleanSections() {
       return sections.filter(function (section) {
-        return section.body.trim() || sectionMediaPayload(section);
+        return section.body.trim() || itemMediaPayload("section", section);
+      });
+    }
+
+    function cleanImages() {
+      return images.filter(function (item) {
+        return itemMediaPayload("image", item);
       });
     }
 
@@ -2021,49 +2966,54 @@
       });
     }
 
+    function mainText() {
+      const title = titleInput.value.trim();
+      const description = descriptionInput.value.trim();
+      return (title ? "# " + title : "") + (title && description ? "\n" : "") + description;
+    }
+
     function buildContainerChildren() {
       const children = [];
       const banner = mainMediaPayload("banner");
       const thumbnail = mainMediaPayload("thumbnail");
-      const title = titleInput.value.trim();
-      const description = descriptionInput.value.trim();
-      const mainText = (title ? "# " + title : "") + (title && description ? "\n" : "") + description;
+      const text = mainText();
 
       if (banner) {
-        children.push({
-          type: 12,
-          items: [{ media: banner, description: "Banner superior" }]
-        });
+        children.push({ type: 12, items: [{ media: banner }] });
       }
       if (pingInput.checked) {
         children.push({ type: 10, content: "@everyone" });
       }
-      if (mainText || thumbnail) {
+      if (text || thumbnail) {
         if (thumbnail) {
           children.push({
             type: 9,
-            components: [{ type: 10, content: mainText || "-# \u200B" }],
-            accessory: { type: 11, media: thumbnail, description: "Miniatura principal" }
+            components: [{ type: 10, content: text || "-# ​" }],
+            accessory: { type: 11, media: thumbnail }
           });
         } else {
-          children.push({ type: 10, content: mainText });
+          children.push({ type: 10, content: text });
         }
       }
+
+      cleanImages().forEach(function (item) {
+        children.push({ type: 12, items: [{ media: itemMediaPayload("image", item) }] });
+      });
 
       cleanSections().forEach(function (section) {
         if (children.length) {
           children.push({ type: 14, divider: true, spacing: 1 });
         }
-        const media = sectionMediaPayload(section);
-        const text = section.body.trim() || "-# \u200B";
+        const media = itemMediaPayload("section", section);
+        const content = section.body.trim() || "-# ​";
         if (media) {
           children.push({
             type: 9,
-            components: [{ type: 10, content: text }],
-            accessory: { type: 11, media: media, description: "Imagen de sección" }
+            components: [{ type: 10, content: content }],
+            accessory: { type: 11, media: media }
           });
         } else {
-          children.push({ type: 10, content: text });
+          children.push({ type: 10, content: content });
         }
       });
 
@@ -2076,12 +3026,7 @@
           children.push({
             type: 1,
             components: validButtons.slice(index, index + 5).map(function (linkButton) {
-              return {
-                type: 2,
-                style: 5,
-                label: linkButton.label.trim(),
-                url: linkButton.url.trim()
-              };
+              return { type: 2, style: 5, label: linkButton.label.trim(), url: linkButton.url.trim() };
             })
           });
         }
@@ -2093,10 +3038,7 @@
           children.push({ type: 14, divider: true, spacing: 1 });
         }
         files.forEach(function (file, index) {
-          children.push({
-            type: 13,
-            file: { url: "attachment://file-" + (index + 1) + "-" + safeFileName(file.name) }
-          });
+          children.push({ type: 13, file: { url: "attachment://file-" + (index + 1) + "-" + safeFileName(file.name) } });
         });
       }
       return children;
@@ -2110,9 +3052,7 @@
           accent_color: Number.parseInt(colorInput.value.slice(1), 16),
           components: buildContainerChildren()
         }],
-        allowed_mentions: {
-          parse: pingInput.checked ? ["everyone"] : []
-        }
+        allowed_mentions: { parse: pingInput.checked ? ["everyone"] : [] }
       };
     }
 
@@ -2134,135 +3074,170 @@
       const banner = bannerFile.files[0];
       const thumbnail = thumbnailFile.files[0];
       if (banner) {
-        uploads.push({ file: banner, name: attachmentName("banner", banner) });
+        uploads.push({ file: banner, name: "banner-" + safeFileName(banner.name) });
       }
       if (thumbnail) {
-        uploads.push({ file: thumbnail, name: attachmentName("thumbnail", thumbnail) });
+        uploads.push({ file: thumbnail, name: "thumbnail-" + safeFileName(thumbnail.name) });
       }
+      images.forEach(function (item) {
+        if (item.file) {
+          uploads.push({ file: item.file, name: itemMediaName("image", item) });
+        }
+      });
       sections.forEach(function (section) {
         if (section.file) {
-          uploads.push({
-            file: section.file,
-            name: "section-" + section.id + "-" + safeFileName(section.file.name)
-          });
+          uploads.push({ file: section.file, name: itemMediaName("section", section) });
         }
       });
       Array.from(extraFiles.files).forEach(function (file, index) {
-        uploads.push({
-          file: file,
-          name: "file-" + (index + 1) + "-" + safeFileName(file.name)
-        });
+        uploads.push({ file: file, name: "file-" + (index + 1) + "-" + safeFileName(file.name) });
       });
       return uploads;
     }
 
-    function setPreviewImage(image, wrapper, source) {
-      if (!source) {
-        image.removeAttribute("src");
-        wrapper.hidden = true;
-        return;
-      }
-      image.onload = function () {
-        wrapper.hidden = false;
-      };
+    function previewMedia(source) {
+      const box = el("div", "pv-media");
+      const image = document.createElement("img");
+      image.alt = "";
+      image.decoding = "async";
       image.onerror = function () {
-        wrapper.hidden = true;
+        box.hidden = true;
       };
-      wrapper.hidden = false;
       image.src = source;
+      box.append(image);
+      return box;
+    }
+
+    function previewThumb(source) {
+      const box = el("div", "pv-thumb");
+      const image = document.createElement("img");
+      image.alt = "";
+      image.onerror = function () {
+        box.hidden = true;
+      };
+      image.src = source;
+      box.append(image);
+      return box;
+    }
+
+    function renderPreview() {
+      const nodes = [];
+      const bannerSource = mainMediaPreview("banner");
+      const thumbSource = mainMediaPreview("thumbnail");
+      const title = titleInput.value.trim();
+      const description = descriptionInput.value.trim();
+
+      if (bannerSource) {
+        nodes.push(previewMedia(bannerSource));
+      }
+      if (pingInput.checked) {
+        nodes.push(el("div", "pv-ping", "@everyone"));
+      }
+      const main = el("div", "pv-row" + (thumbSource ? " with-thumb" : ""));
+      const copy = el("div");
+      const heading = el("h2", "pv-title" + (title ? "" : " placeholder"), title || "Título del mensaje");
+      const text = el("p", "pv-text" + (description ? "" : " placeholder"), description || "La descripción aparecerá aquí.");
+      copy.append(heading, text);
+      main.append(copy);
+      if (thumbSource) {
+        main.append(previewThumb(thumbSource));
+      }
+      nodes.push(main);
+
+      cleanImages().forEach(function (item) {
+        nodes.push(previewMedia(itemMediaPreview(item)));
+      });
+
+      cleanSections().forEach(function (section) {
+        nodes.push(el("div", "pv-sep"));
+        const source = itemMediaPreview(section);
+        const row = el("div", "pv-row" + (source ? " with-thumb" : ""));
+        row.append(el("p", "pv-text", section.body.trim() || "​"));
+        if (source) {
+          row.append(previewThumb(source));
+        }
+        nodes.push(row);
+      });
+
+      const validButtons = cleanButtons();
+      if (validButtons.length) {
+        nodes.push(el("div", "pv-sep"));
+        const group = el("div", "pv-buttons");
+        validButtons.forEach(function (linkButton) {
+          const link = el("a", "pv-link");
+          link.href = linkButton.url.trim();
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.append(el("span", "", linkButton.label.trim()), icon("link"));
+          group.append(link);
+        });
+        nodes.push(group);
+      }
+
+      const files = Array.from(extraFiles.files);
+      if (files.length) {
+        nodes.push(el("div", "pv-sep"));
+        files.forEach(function (file) {
+          const card = el("div", "pv-file");
+          const info = el("div");
+          info.append(el("strong", "", file.name), el("small", "", formatBytes(file.size)));
+          card.append(icon("file"), info);
+          nodes.push(card);
+        });
+      }
+      componentPreview.replaceChildren.apply(componentPreview, nodes);
     }
 
     function updatePreview() {
       titleCount.textContent = titleInput.value.length + " / 256";
       descriptionCount.textContent = descriptionInput.value.length + " / 4000";
-      colorValue.textContent = colorInput.value.toUpperCase();
-      componentPreview.style.setProperty("--component-color", colorInput.value);
-      previewPing.hidden = !pingInput.checked;
-
-      const title = titleInput.value.trim();
-      const description = descriptionInput.value.trim();
-      previewTitle.textContent = title || "Título del mensaje";
-      previewTitle.classList.toggle("placeholder", !title);
-      previewDescription.textContent = description || "La descripción aparecerá aquí.";
-      previewDescription.classList.toggle("placeholder", !description);
-
-      setPreviewImage(previewBanner, previewBannerWrap, mainMediaPreview("banner"));
-      const thumbnailSource = mainMediaPreview("thumbnail");
-      setPreviewImage(previewThumbnail, previewThumbnailWrap, thumbnailSource);
-      mainPreview.classList.toggle("with-image", Boolean(thumbnailSource));
-
-      previewSections.textContent = "";
-      cleanSections().forEach(function (section) {
-        const separator = document.createElement("div");
-        separator.className = "preview-separator";
-        const item = document.createElement("section");
-        item.className = "preview-section";
-        const text = document.createElement("p");
-        text.textContent = section.body.trim();
-        item.append(text);
-        const mediaSource = sectionMediaPreview(section);
-        if (mediaSource) {
-          item.classList.add("with-image");
-          const wrap = document.createElement("div");
-          wrap.className = "section-thumbnail";
-          const image = document.createElement("img");
-          image.alt = "Imagen de sección";
-          image.src = mediaSource;
-          wrap.append(image);
-          item.append(wrap);
-        }
-        previewSections.append(separator, item);
+      const color = colorInput.value.toLowerCase();
+      colorValue.textContent = color.toUpperCase();
+      swatches.forEach(function (swatch) {
+        swatch.classList.toggle("on", swatch.dataset.color === color);
       });
-
-      previewButtons.textContent = "";
-      cleanButtons().forEach(function (linkButton) {
-        const link = document.createElement("a");
-        link.className = "preview-link";
-        link.href = linkButton.url.trim();
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        const text = document.createElement("span");
-        text.textContent = linkButton.label.trim();
-        link.append(text);
-        previewButtons.append(link);
-      });
-      previewButtonsArea.hidden = cleanButtons().length === 0;
-
-      previewFiles.textContent = "";
-      Array.from(extraFiles.files).forEach(function (file) {
-        previewFiles.append(createFileChip(file));
-      });
-      previewFilesArea.hidden = extraFiles.files.length === 0;
+      componentPreview.style.setProperty("--accent", color);
+      setMini(bannerMini, mainMediaPreview("banner"));
+      setMini(thumbnailMini, mainMediaPreview("thumbnail"));
+      renderPreview();
 
       const payload = buildPayload();
       const total = countComponents(payload.components[0]);
-      componentCount.textContent = total + " " + (total === 1 ? "componente" : "componentes");
+      componentCount.textContent = total + " " + (total === 1 ? "componente" : "componentes") + " de 40";
+      metaComponents.textContent = String(total);
+      metaFiles.textContent = String(getUploads().length);
       payloadPreview.textContent = JSON.stringify(payload, null, 2);
     }
 
     function validateForm() {
       if (!isWebhookUrl(webhookUrl.value.trim())) {
+        openPanelOf(webhookUrl);
         webhookUrl.focus();
         return "Escribe una URL de webhook válida.";
       }
-      const invalidMainImage = [
+      const invalidMain = [
         { input: bannerUrl, file: bannerFile.files[0], name: "banner" },
         { input: thumbnailUrl, file: thumbnailFile.files[0], name: "miniatura" }
       ].find(function (item) {
         return item.input.value.trim() && !item.file && !isHttpUrl(item.input.value.trim());
       });
-      if (invalidMainImage) {
-        invalidMainImage.input.focus();
-        return "La URL de " + invalidMainImage.name + " no es válida.";
+      if (invalidMain) {
+        openPanelOf(invalidMain.input);
+        invalidMain.input.focus();
+        return "La URL de " + invalidMain.name + " no es válida.";
+      }
+      const invalidImage = images.find(function (item) {
+        return item.imageUrl.trim() && !item.file && !isHttpUrl(item.imageUrl.trim());
+      });
+      if (invalidImage) {
+        focusById("#full-image-" + invalidImage.id);
+        return "Una imagen tiene una URL inválida.";
       }
       const invalidSection = sections.find(function (section) {
         return section.imageUrl.trim() && !section.file && !isHttpUrl(section.imageUrl.trim());
       });
       if (invalidSection) {
-        const input = document.querySelector("#section-image-" + invalidSection.id);
-        if (input) {
-          input.focus();
-        }
+        focusById("#section-image-" + invalidSection.id);
         return "Una sección tiene una URL de imagen inválida.";
       }
       const invalidButton = linkButtons.find(function (linkButton) {
@@ -2271,21 +3246,16 @@
         return hasLabel !== hasUrl || (hasUrl && !isHttpUrl(linkButton.url.trim()));
       });
       if (invalidButton) {
-        const input = document.querySelector("#button-label-" + invalidButton.id);
-        if (input) {
-          input.focus();
-        }
+        focusById("#button-label-" + invalidButton.id);
         return "Completa el texto y una URL válida en cada botón.";
       }
-      const children = buildContainerChildren();
-      if (!children.length) {
+      if (!buildContainerChildren().length) {
         titleInput.focus();
         return "Añade contenido, una imagen, una sección, un botón o un archivo.";
       }
-      const payload = buildPayload();
-      const totalComponents = countComponents(payload.components[0]);
-      if (totalComponents > 40) {
-        return "El mensaje usa " + totalComponents + " componentes. Discord permite hasta 40.";
+      const total = countComponents(buildPayload().components[0]);
+      if (total > 40) {
+        return "El mensaje usa " + total + " componentes. Discord permite hasta 40.";
       }
       if (getUploads().length > maxFiles) {
         return "Seleccionaste más de " + maxFiles + " archivos en total.";
@@ -2293,8 +3263,43 @@
       return "";
     }
 
+    function openPanelOf(node) {
+      const panel = node.closest("details");
+      if (panel) {
+        panel.open = true;
+      }
+    }
+
+    function focusById(selector) {
+      const input = document.querySelector(selector);
+      if (input) {
+        openPanelOf(input);
+        input.focus();
+      }
+    }
+
+    function setSending(active) {
+      sendButtons.forEach(function (button) {
+        button.disabled = active;
+        button.classList.toggle("loading", active);
+        button.querySelector("use").setAttribute("href", active ? "#i-refresh" : "#i-send");
+        button.querySelector("span").textContent = active ? "Enviando..." : "Enviar a Discord";
+      });
+    }
+
+    function launchPlane(origin) {
+      if (reduceMotion.matches) {
+        return;
+      }
+      const box = origin.getBoundingClientRect();
+      flyer.style.setProperty("--x0", Math.round(box.left + box.width / 2 - 37) + "px");
+      flyer.style.setProperty("--y0", Math.round(box.top - 30) + "px");
+      restart(flyer, "go");
+    }
+
     async function sendWebhook(event) {
       event.preventDefault();
+      const origin = event.submitter || sendButtons[sendButtons.length - 1];
       const validationError = validateForm();
       if (validationError) {
         setMessage(validationError, "error");
@@ -2305,8 +3310,7 @@
       const target = new URL(webhookUrl.value.trim());
       target.searchParams.set("wait", "true");
       target.searchParams.set("with_components", "true");
-      sendButton.disabled = true;
-      sendButton.textContent = "Enviando...";
+      setSending(true);
       setMessage("Enviando a Discord...");
 
       try {
@@ -2333,12 +3337,32 @@
           }
           throw new Error("Discord respondió con " + response.status + "." + detail);
         }
+        launchPlane(origin);
         setMessage("Mensaje enviado correctamente.", "success");
       } catch (error) {
         setMessage(error.message || "No se pudo enviar el mensaje.", "error");
       } finally {
-        sendButton.disabled = false;
-        sendButton.textContent = "Enviar a Discord";
+        setSending(false);
+      }
+    }
+
+    async function copyJson(event) {
+      const button = event.currentTarget;
+      event.preventDefault();
+      event.stopPropagation();
+      try {
+        await navigator.clipboard.writeText(JSON.stringify(buildPayload(), null, 2));
+        const label = button.querySelector("span");
+        const original = label.textContent;
+        label.textContent = "Copiado";
+        button.querySelector("use").setAttribute("href", "#i-star");
+        setTimeout(function () {
+          label.textContent = original;
+          button.querySelector("use").setAttribute("href", "#i-copy");
+        }, 1400);
+        setMessage("JSON copiado al portapapeles.", "success");
+      } catch (error) {
+        setMessage("El navegador no permitió copiar el JSON.", "error");
       }
     }
 
@@ -2352,27 +3376,43 @@
       bannerFile.value = "";
       thumbnailFile.value = "";
       extraFiles.value = "";
-      sections.forEach(function (section) {
-        if (section.previewUrl) {
-          URL.revokeObjectURL(section.previewUrl);
-        }
-      });
+      sections.forEach(releaseItem);
+      images.forEach(releaseItem);
       sections = [];
+      images = [];
       linkButtons = [];
       syncMainMedia("banner");
       syncMainMedia("thumbnail");
       renderExtraFiles();
+      renderImagesEditor();
       renderSectionsEditor();
       renderButtonsEditor();
       updatePreview();
       setMessage("Contenido limpiado. La webhook se conservó.");
     }
 
+    function tickClock() {
+      const now = new Date();
+      previewTime.textContent = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+    }
+
     webhookUrl.addEventListener("input", updateConnection);
     saveFavoriteButton.addEventListener("click", saveFavorite);
+    favoriteName.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        saveFavorite();
+      }
+    });
     titleInput.addEventListener("input", updatePreview);
     descriptionInput.addEventListener("input", updatePreview);
     colorInput.addEventListener("input", updatePreview);
+    swatches.forEach(function (swatch) {
+      swatch.addEventListener("click", function () {
+        colorInput.value = swatch.dataset.color;
+        updatePreview();
+      });
+    });
     pingInput.addEventListener("change", updatePreview);
     bannerUrl.addEventListener("input", updatePreview);
     thumbnailUrl.addEventListener("input", updatePreview);
@@ -2382,20 +3422,27 @@
     thumbnailFile.addEventListener("change", function () {
       syncMainMedia("thumbnail");
     });
-    document.querySelector("#clear-banner").addEventListener("click", function () {
+    $("#clear-banner").addEventListener("click", function () {
       clearMainMedia("banner");
     });
-    document.querySelector("#clear-thumbnail").addEventListener("click", function () {
+    $("#clear-thumbnail").addEventListener("click", function () {
       clearMainMedia("thumbnail");
     });
     extraFiles.addEventListener("change", function () {
       renderExtraFiles();
       updatePreview();
     });
+    addImageButton.addEventListener("click", addImage);
     addSectionButton.addEventListener("click", addSection);
     addButtonButton.addEventListener("click", addLinkButton);
     clearBuilderButton.addEventListener("click", clearBuilder);
+    copyButtons.forEach(function (button) {
+      button.addEventListener("click", copyJson);
+    });
     form.addEventListener("submit", sendWebhook);
+    flyer.addEventListener("animationend", function () {
+      flyer.classList.remove("go");
+    });
     window.addEventListener("beforeunload", function () {
       if (bannerObjectUrl) {
         URL.revokeObjectURL(bannerObjectUrl);
@@ -2403,15 +3450,14 @@
       if (thumbnailObjectUrl) {
         URL.revokeObjectURL(thumbnailObjectUrl);
       }
-      sections.forEach(function (section) {
-        if (section.previewUrl) {
-          URL.revokeObjectURL(section.previewUrl);
-        }
-      });
+      sections.forEach(releaseItem);
+      images.forEach(releaseItem);
     });
 
-    renderFavorites();
+    tickClock();
+    setInterval(tickClock, 30000);
     renderExtraFiles();
+    renderImagesEditor();
     renderSectionsEditor();
     renderButtonsEditor();
     updateConnection();
